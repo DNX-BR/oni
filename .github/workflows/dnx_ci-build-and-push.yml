@@ -1,0 +1,48 @@
+name: Build and Push Oni Image
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  # Não Alterar a variável BRANCH
+  RELEASE_VERSION: ${{ github.ref_name }}
+  # Ajustar somente as variáveis abaixo
+  APPNAME: dnxbrasil/oni
+  IMAGE_REPO: public.ecr.aws
+
+jobs:
+  buildAndPush:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Set output TAGs
+        id: vars
+        run: |
+          echo "::set-output name=tag::$(echo -n ${{ env.IMAGE_REPO }}/${{ env.APPNAME }}:${{ env.RELEASE_VERSION }})"
+          echo "::set-output name=latest::$(echo -n ${{ env.IMAGE_REPO }}/${{ env.APPNAME }}:latest)"
+
+      - name: Login to ECR Repository
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.IMAGE_REPO }}
+          username: ${{ secrets.AWS_ECR_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_ECR_SECRET_ACCESS_KEY_ID }}
+        
+      - name: Build and push - ${{ env.APPNAME }}
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.vars.outputs.tag }},${{ steps.vars.outputs.latest }}
+          no-cache: true

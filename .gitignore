@@ -1,0 +1,10 @@
+dist/
+node_modules/
+.vscode/
+*.yaml
+.env
+.env.assume
+.env.auth
+package-lock.json
+teste.js
+www/

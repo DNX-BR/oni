@@ -1,0 +1,2 @@
+Makefile merge=ours
+.gitlab-ci.yml merge=ours
