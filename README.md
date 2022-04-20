@@ -107,9 +107,9 @@ development:                              # Oni Workspace defined by variable NO
     
   # In some cases, such as ECR, a different account can be used for image centering.
   # To perform the push to this account, oni assumes specific to it.  
-  AWS_REGION: us-east-2
-  AWS_ACCOUNT: '333333333333'
-  AWS_ROLE: your-deploy-role
+  ECR_AWS_REGION: us-east-2
+  ECR_AWS_ACCOUNT: '333333333333'
+  ECR_AWS_ROLE: your-deploy-role
 ```
 
 ## Oni Commands
