@@ -130,7 +130,8 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             var item = TPM_SECRETS[idx];
             for (var key in item) {
                 var value = item[key];
-                APP_SECRETS.push({ name: key, valueFrom: `arn:aws:ssm:${APP_REGION}:${APP_ACCOUNT}:parameter/${value}` })
+                // APP_SECRETS.push({ name: key, valueFrom: `arn:aws:ssm:${APP_REGION}:${APP_ACCOUNT}:parameter/${value}` })
+                APP_SECRETS.push({ name: key, valueFrom: value }) // Now the value need inform the complete arn of secrets manager or ssm
             }
         }
 
