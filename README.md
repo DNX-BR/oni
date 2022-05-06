@@ -67,8 +67,8 @@ development:                              # Oni Workspace defined by variable NO
       - 8080    
     APP_VARIABLES:                        # Container variables
       - KEY: VALUE    
-    APP_SECRETS:                          # Container secret parameter from ssm
-      - VARIABLE_NAME: secret-name-from-ssm
+    APP_SECRETS:                          # Container secret parameter from ssm or secrets manager
+      - VARIABLE_NAME: full-arn-from-ssm-or-secrets-manager
     APP_COMMAND:                          # Command for passing to container
       - /bin/bash
       - ls
