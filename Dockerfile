@@ -13,7 +13,9 @@ FROM debian:latest as base_debian
      apt-get install -y \
      wget \
      runc  \
-     curl 
+     curl \
+     git
+
 
 
 WORKDIR /root

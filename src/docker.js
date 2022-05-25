@@ -4,20 +4,35 @@ const yenv = require('yenv');
 const { AssumeRole } = require('./auth')
 const AUTH_TYPE = 'CI';
 
-async function BuildImageBuildKit(tag, dockerFile = '.', app = 'APP_DEFAULT', push = 'false') {
+async function BuildImageBuildKit(
+                                tag,
+                                dockerFile,
+                                app,
+                                push = 'false',
+                                filename,
+                                enableCache,
+                                cacheLocation) {
+
+    let cache = '';
+
+    if(enableCache)
+        cache = `--export-cache type=local,dest=${cacheLocation} \
+                --import-cache type=local,src=${cacheLocation}`;
 
     try {
         const env = yenv('oni.yaml', process.env.NODE_ENV)
         const APP = env[app];
         const APP_IMAGE = APP.APP_IMAGE;
 
+
+
         const result = await shell.exec(`buildctl build     \
         --frontend=dockerfile.v0 \
         --local context=.    \
         --local dockerfile=${dockerFile} \
-        --output type=docker,name=${APP_IMAGE}:${tag},push=${push} \
-        --export-cache type=local,dest=cache_build \
-        --import-cache type=local,src=cache_build > image.tar`)
+        --opt filename=${filename} \
+        --output type=docker,name=${APP_IMAGE}:${tag} \
+          ${cache} > image.tar`)
 
         if (result.code != 0)
             process.exit(1);

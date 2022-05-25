@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const { BuildImageBuildKit, PushImageCrane } = require('./src/docker');
+const { CloneRepo, CommitPushChanges } = require('./src/git');
 const { DeployECS } = require('./src/ecs');
-const { initSample, ScanImageTrivy } = require('./src/utils');
+const { initSample, ScanImageTrivy, UpdateImageTag } = require('./src/utils');
 const { DeployS3 } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
@@ -46,6 +47,13 @@ async function init() {
                         default: false,
                         description: 'Assume role defined in oni.yaml ',
                     })
+                    .option('disable-deploy', {
+                        alias: 'd',
+                        type: 'boolean',
+                        required: false,
+                        default: false,
+                        description: 'Create task only e not deploy in ecs',
+                    })                    
                     .option('channel-notification', {
                         alias: 'c',
                         choices: ['slack', 'google', 'teams'],
@@ -100,7 +108,29 @@ async function init() {
                 type: 'string',
                 required: true,
                 description: 'Application name in oni.yml',
-            }).option('push', {
+            })
+            .option('filename', {
+                alias: 'f',
+                type: 'string',
+                required: false,
+                default: './Dockerfile',
+                description: 'dockerfile name',
+            })
+            .option('cache', {
+                alias: 'c',
+                type: 'boolean',
+                required: false,
+                default: false,
+                description: 'Enable cache layer of build',
+            })       
+            .option('location-cache', {
+                alias: 'l',
+                type: 'string',
+                required: false,
+                default: 'cache_build',
+                description: 'Directory for storage cache',
+            })                    
+            .option('push', {
                     alias: 'p',
                     type: 'string',
                     required: false,
@@ -174,6 +204,68 @@ async function init() {
                 .example('oni scan-image')
                 .strictOptions()
         })
+        .command('update-image-tag-k8s', 'Update image tag in helm values or direct in deployment manifest', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('path-file', {
+                alias: 'p',
+                type: 'string',
+                required: true,
+                description: 'path to file values.yaml or deploment.yaml',
+            })
+            .option('tag', {
+                alias: 't',
+                type: 'string',
+                required: true,
+                description: 'Tag value for update image',
+            })          
+            .option('helm', {
+                alias: 'h',
+                type: 'boolean',
+                required: false,
+                default: false,
+                description: 'Is tag in helm values',
+            })
+            .option('image-index', {
+                alias: 'i',
+                type: 'string',
+                required: false,
+                default: 0,
+                description: 'Image index in container array of deployment',
+            })                                       
+                .example('oni update-image-tag-k8s -p /chart/values.yaml -t v1.23.1 -h')
+                .strictOptions()
+        })        
+        .command('git-clone', 'Git clone command over http', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('token-http', {
+                alias: 't',
+                type: 'string',
+                required: true,
+                description: 'Token http for clone assistant repository',
+            })
+            .option('url', {
+                alias: 'u',
+                type: 'string',
+                required: true,
+                description: 'Repositoru url without "http(s)://"',
+            })          
+            .option('branch', {
+                alias: 'b',
+                type: 'string',
+                required: true,
+                description: 'Repository Branch',
+            })                                       
+                .example('oni git-clone -t xxxxxx -u repo/nginx.git -b master')
+                .strictOptions()
+        })
+        .command('git-commit', 'Git clone command over http', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('message', {
+                alias: 'm',
+                type: 'string',
+                required: true,
+                description: 'git commit message',
+            })                                  
+                .example('oni git-commit -m "initial commit"')
+                .strictOptions()
+        })                  
         .command('init', 'create oni.yaml sample')
         .version('version', 'Show Version', `Version ${process.env.APP_VERSION}`)
         .alias('version', 'v')
@@ -185,16 +277,16 @@ async function init() {
 
     let command = argv["_"];
 
-    if (await fs.existsSync('./oni.yaml') || command[0] === 'init') {
+    if (await fs.existsSync('./oni.yaml') || command[0] === 'init' || command[0] === 'git-clone' || command[0] === 'git-commit' || command[0] === 'update-image-tag-k8s') {
         switch (command[0]) {
             case 'deploy-static':
                 await DeployS3(argv.name, argv.c, argv.a);
                 break;
             case 'ecs-deploy':
-                await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a)
+                await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d)
                 break;
             case 'build-image':
-                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.push);
+                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.push,argv.f,argv.c,argv.l);
                 break;
             case 'push-image':
                 await PushImageCrane(argv.name, argv.tag, argv.a);
@@ -205,6 +297,15 @@ async function init() {
             case 'scan-image':
                 await ScanImageTrivy(argv.o);
                 break;
+            case 'git-clone':
+                await CloneRepo(argv.t, argv.u, argv.b);
+                break;          
+            case 'git-commit':
+                await CommitPushChanges(argv.t);
+                break;  
+            case 'update-image-tag-k8s':
+                await UpdateImageTag(argv.p,argv.t,argv.h,argv.i)
+                break;                              
             case 'init':
                 await initSample();
                 break;

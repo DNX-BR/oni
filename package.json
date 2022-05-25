@@ -13,10 +13,12 @@
     "aws-sdk": "^2.922.0",
     "axios": "^0.25.0",
     "cli-docs-generator": "^1.0.7",
+    "js-yaml": "^4.1.0",
     "jsonschema": "^1.4.0",
     "mime-types": "^2.1.32",
     "s3-sync-client": "^3.0.0",
     "shelljs": "^0.8.5",
+    "simple-git": "^3.7.1",
     "yargs": "^17.0.1",
     "yenv": "^3.0.0"
   },

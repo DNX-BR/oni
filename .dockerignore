@@ -2,7 +2,7 @@
 cache_build/
 node_modules/
 package-lock.json
-dist/*.yaml
+dist/*
 Dockerfile
 .env*
 .git*

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const yaml = require('js-yaml');
 const shell = require('shelljs');
 const yenv = require('yenv');
 const validator = require('jsonschema').Validator;
@@ -202,10 +203,29 @@ async function ScanImageTrivy(output = 'default') {
 
 }
 
+async function UpdateImageTag(pathFile,tag, helm, imageIndex = 0) {
+  try {    
+    let doc = await yaml.load(await fs.readFileSync(pathFile, 'utf8'));
+    if (helm) {
+      doc.image.tag = tag;
+    }
+    else {
+      let image = doc.spec.template.spec.containers[imageIndex].image;
+      doc.spec.template.spec.containers[imageIndex].image = `${image.split(':')[0]}:${tag}`
+    }
+    await fs.writeFileSync(pathFile, yaml.dump(doc))
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+}
+
+
 module.exports = {
   initSample,
   ValidateLambdaOniRequirements,
   ValidateStaticOniRequirements,
   ValidateECSMinimunRequirements,
-  ScanImageTrivy
+  ScanImageTrivy,
+  UpdateImageTag
 }

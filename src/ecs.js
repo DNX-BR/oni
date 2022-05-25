@@ -89,7 +89,7 @@ async function GetLogFailedContainerDeploy(task) {
 
 }
 
-async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole) {
+async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole, disableDeploy) {
     try {
         await initEnvs(app, assumeRole, channelNotification, withoutLoadBalance, isFargate);
 
@@ -231,10 +231,12 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         const taskARN = task.taskDefinition.taskDefinitionArn;
         console.log('\x1b[36mTask Defnition: ', taskARN);
 
-        if (withoutLoadBalance) {
-            await UpdateService(taskARN, app, channelNotification)
-        } else {
-            await CodeDeploy(taskARN, app, TMP_PORTS[0], cred, isFargate, channelNotification)
+        if (!disableDeploy) {
+            if (withoutLoadBalance) {
+                await UpdateService(taskARN, app, channelNotification)
+            } else {
+                await CodeDeploy(taskARN, app, TMP_PORTS[0], cred, isFargate, channelNotification)
+            }
         }
     } catch (error) {
         console.error('\x1b[31m', error);
