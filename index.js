@@ -129,7 +129,13 @@ async function init() {
                 required: false,
                 default: 'cache_build',
                 description: 'Directory for storage cache',
-            })                    
+            }).option('assume-role', {
+                    alias: 'a',
+                    type: 'boolean',
+                    required: false,
+                    default: false,
+                    description: 'Assume role defined in oni.yaml ',
+             })                                          
             .option('push', {
                     alias: 'p',
                     type: 'string',
@@ -286,7 +292,7 @@ async function init() {
                 await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d)
                 break;
             case 'build-image':
-                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.push,argv.f,argv.c,argv.l);
+                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.push,argv.f,argv.c,argv.l,argv.a);
                 break;
             case 'push-image':
                 await PushImageCrane(argv.name, argv.tag, argv.a);

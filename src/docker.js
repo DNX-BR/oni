@@ -11,7 +11,8 @@ async function BuildImageBuildKit(
                                 push = 'false',
                                 filename,
                                 enableCache,
-                                cacheLocation) {
+                                cacheLocation,
+                                assumeRole) {
 
     let cache = '';
 
@@ -23,6 +24,14 @@ async function BuildImageBuildKit(
         const env = yenv('oni.yaml', process.env.NODE_ENV)
         const APP = env[app];
         const APP_IMAGE = APP.APP_IMAGE;
+        const APP_REGION = APP.APP_REGION;
+
+        const authEcr = await DockerLoginECR(assumeRole,APP_REGION,app);
+
+        const resultLogin = await shell.exec(`crane auth login ${APP_IMAGE.split('/')[0]} -u AWS -p ${authEcr.password}`,{ silent: true });
+    
+        if (resultLogin.code != 0)
+            process.exit(1);        
 
 
 
