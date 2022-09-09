@@ -36,6 +36,11 @@ async function UpdateLambdaEnvVariables(functionName, variables) {
             }
         }
         if (variables) {
+            
+            await lambda.waitFor('functionUpdated', {
+                FunctionName: functionName
+            }).promise();
+
             result = await lambda.updateFunctionConfiguration({
                 FunctionName: functionName,
                 Environment: {
