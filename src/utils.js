@@ -94,10 +94,6 @@ async function ValideOni(oni, schema, assumeRole, notification) {
     console.error('\x1b[31mErro: ', v.validate(oni, schema, { nestedErrors: true }).toString())
     process.exit(1);
   }
-
-
-
-
 }
 
 async function ValidateLambdaOniRequirements(oni, assumeRole, notification) {
@@ -125,11 +121,9 @@ async function ValidateStaticOniRequirements(oni, assumeRole, notification) {
       "CF_DISTRIBUTION_ID": { "type": "string" },
     },
     "required": ["APP_SRC", "APP_S3_BUCKET", "APP_REGION", "APP_NAME", "CF_DISTRIBUTION_ID"]
-
   }
 
   await ValideOni(oni, schema, assumeRole, notification);
-
 }
 
 async function ValidateECSMinimunRequirements(oni, assumeRole, {

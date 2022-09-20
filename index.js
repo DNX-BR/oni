@@ -53,6 +53,13 @@ async function init() {
                         required: false,
                         description: 'Notification channel for send message after deploy app',
                     })
+                    .option('enable-datadog-agent', {
+                        alias: 'd',
+                        type: 'boolean',
+                        required: false,
+                        default: false,
+                        description: 'Adds datadog agent to task definition'
+                    })
                     .example('oni ecs-deploy -n MY_APP -t 0.0.1')
                     .strictOptions()
             }
@@ -127,7 +134,7 @@ async function init() {
                     required: false,
                     default: false,
                     description: 'Assume role defined in oni.yaml ',
-             })
+            })
                 .example('oni push-image -a APP_DEFAULT -t v1')
                 .strictOptions()
         })

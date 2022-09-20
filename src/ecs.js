@@ -27,6 +27,9 @@ let TMP_CONSTRAINTS;
 let TASK_ARN;
 let EXECUTION_ROLE_ARN;
 let TMP_CAPACITY_PROVIDERS;
+let DD_ECS_FARGATE;
+let DD_SITE;
+let DD_API_KEY;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
@@ -34,13 +37,14 @@ async function sleep(ms) {
     });
 }
 
-async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance, isFargate) {
+async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance, isFargate, enableDatadogAgent) {
     const env = yenv('oni.yaml', process.env.NODE_ENV);
     APP = env[app];
     await util.ValidateECSMinimunRequirements(APP, assumeRole, {
         notification: channelNotification,
         withoutLoadBalance: withoutLoadBalance,
-        isFargate: isFargate
+        isFargate: isFargate,
+        enableDatadogAgent: enableDatadogAgent
     });
     APP_IMAGE = APP.APP_IMAGE;
     APP_NAME = APP.APP_NAME;
@@ -64,6 +68,9 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     AUTH_TYPE = 'INFRA';
     TMP_CAPACITY_PROVIDERS = APP.APP_CAPACITY_PROVIDERS;
     APP_DEPLOY_TIMEOUT = APP.APP_DEPLOY_TIMEOUT || 600;
+    DD_ECS_FARGATE = APP.DD_ECS_FARGATE || true;
+    DD_SITE = APP.DD_SITE || "datadoghq.com";
+    DD_API_KEY = APP.DD_API_KEY;
 
 }
 
@@ -89,9 +96,9 @@ async function GetLogFailedContainerDeploy(task) {
 
 }
 
-async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole) {
+async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole, enableDatadogAgent) {
     try {
-        await initEnvs(app, assumeRole, channelNotification, withoutLoadBalance, isFargate);
+        await initEnvs(app, assumeRole, channelNotification, withoutLoadBalance, isFargate, enableDatadogAgent);
 
         let cred;
         let confCredential = {
@@ -106,7 +113,6 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             confCredential.sessionToken = cred.sessionToken;
         }
 
-
         aws.config.update(confCredential)
 
         let APP_VARIABLES = [];
@@ -117,6 +123,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         let APP_CONSTRAINTS = [];
         let APP_CMDS = [];
         let APP_ULIMITS = [];
+        let DD_HOST_PORTS = [];
 
         for (var idx in TPM_VARIABLES) {
             var item = TPM_VARIABLES[idx];
@@ -137,7 +144,11 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         if (TMP_PORTS)
             for (const port of TMP_PORTS) {
                 APP_PORTS.push({ containerPort: port })
-
+            }
+        
+        if (TMP_PORTS && enableDatadogAgent)
+            for (const ddPort of TMP_PORTS) {
+                DD_HOST_PORTS.push({"host": "%%host%%", "port": ddPort})
             }
 
         if (TMP_MOUNTPOINTS)
@@ -186,6 +197,35 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
                 APP_ULIMITS.push({ hardLimit: u.SOFTLIMIT, softLimit: u.HARDLIMIT, name: u.NAME });
             }
 
+        if (enableDatadogAgent) {
+            let datadogContainerDefinition = {
+                essential: false,
+                image: `public.ecr.aws/datadog/agent:latest`,
+                name: `datadog-agent`,
+                environment: [
+                    {
+                        "name": "ECS_FARGATE",
+                        "value": `${DD_ECS_FARGATE}`
+                    },
+                    {
+                        "name": "DD_SITE",
+                        "value": `${DD_SITE}`
+                    }
+                ],
+                secrets: [
+                    {
+                        "name": "DD_API_KEY",
+                        "valueFrom": `${DD_API_KEY}`
+                    }
+                ],
+                dockerLabels: {
+                    "com.datadoghq.ad.instances": `${DD_HOST_PORTS}`,
+                    "com.datadoghq.ad.check_names": `${APP_NAME}`,
+                    "com.datadoghq.ad.init_configs": "[{}]"
+                }
+            }
+        }
+
         let containerDefinition = {
             essential: true,
             image: `${APP_IMAGE}:${tag}`,
@@ -215,18 +255,35 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
 
         console.log('ContainerDefinition: ', containerDefinition);
         const ecs = new aws.ECS();
-        const task = await ecs.registerTaskDefinition({
-            containerDefinitions: [containerDefinition],
-            family: `${CLUSTER_NAME}-${APP_NAME}`,
-            executionRoleArn: EXECUTION_ROLE_ARN ? EXECUTION_ROLE_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
-            placementConstraints: APP_CONSTRAINTS,
-            volumes: APP_VOLUMES,
-            networkMode: NETWORK_MODE,
-            memory: isFargate ? APP_MEMORY : null,
-            cpu: isFargate ? APP_CPU : null,
-            taskRoleArn: TASK_ARN ? TASK_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
-            requiresCompatibilities: isFargate ? ['FARGATE'] : []
-        }).promise();
+
+        if (enableDatadogAgent) {
+            console.log('datadogContainerDefinition: ', datadogContainerDefinition);
+            const task = await ecs.registerTaskDefinition({
+                containerDefinitions: [containerDefinition, datadogContainerDefinition],
+                family: `${CLUSTER_NAME}-${APP_NAME}`,
+                executionRoleArn: EXECUTION_ROLE_ARN ? EXECUTION_ROLE_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
+                placementConstraints: APP_CONSTRAINTS,
+                volumes: APP_VOLUMES,
+                networkMode: NETWORK_MODE,
+                memory: isFargate ? APP_MEMORY : null,
+                cpu: isFargate ? APP_CPU : null,
+                taskRoleArn: TASK_ARN ? TASK_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
+                requiresCompatibilities: isFargate ? ['FARGATE'] : []
+            }).promise();
+        } else {
+            const task = await ecs.registerTaskDefinition({
+                containerDefinitions: [containerDefinition],
+                family: `${CLUSTER_NAME}-${APP_NAME}`,
+                executionRoleArn: EXECUTION_ROLE_ARN ? EXECUTION_ROLE_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
+                placementConstraints: APP_CONSTRAINTS,
+                volumes: APP_VOLUMES,
+                networkMode: NETWORK_MODE,
+                memory: isFargate ? APP_MEMORY : null,
+                cpu: isFargate ? APP_CPU : null,
+                taskRoleArn: TASK_ARN ? TASK_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
+                requiresCompatibilities: isFargate ? ['FARGATE'] : []
+            }).promise();
+        }
 
         const taskARN = task.taskDefinition.taskDefinitionArn;
         console.log('\x1b[36mTask Defnition: ', taskARN);
@@ -322,7 +379,7 @@ async function CodeDeploy(taskARN, appName = 'APP_DEFAULT', appPort = 8080, cred
         const codeDeploy = new aws.CodeDeploy();
 
         console.log('\x1b[36m', `Init deploy app ${APP_NAME} `)
-        console.log('AppSecp: ', JSON.stringify(contentDefinition));
+        console.log('AppSpec: ', JSON.stringify(contentDefinition));
 
         const deploy = await codeDeploy.createDeployment({
             applicationName: `${CLUSTER_NAME}-${APP_NAME}`,
