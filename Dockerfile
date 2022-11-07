@@ -8,7 +8,7 @@ RUN npm install; \
     pkg .
 
 FROM debian:latest as base_debian
-
+ENV APP_VERSION 2.3.0
  RUN apt-get update ; \
      apt-get install -y \
      wget \

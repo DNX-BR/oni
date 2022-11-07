@@ -7,6 +7,7 @@ const { initSample, ScanImageTrivy, UpdateImageTag } = require('./src/utils');
 const { DeployS3 } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
+const { GetLatestImage } = require('./src/ecr');
 
 async function init() {
 
@@ -272,6 +273,27 @@ async function init() {
                 .example('oni git-commit -m "initial commit"')
                 .strictOptions()
         })                  
+        .command('get-latest-image [options]', 'command for get latest image to ecr',
+            function (yargs, helpOrVersionSetgs) {
+                return yargs.option('name', {
+                    alias: 'n',
+                    type: 'string',
+                    required: true,
+                    description: 'Application name defined in oni.yml',
+                    default: 'APP_DEFAULT'
+                })
+                    .option('assume-role', {
+                        alias: 'a',
+                        type: 'boolean',
+                        required: false,
+                        default: false,
+                        description: 'Assume role defined in oni.yaml ',
+                    })                
+                    .example('oni get-latest-image -n MY_APP')
+                    .strictOptions()
+            }
+
+        )        
         .command('init', 'create oni.yaml sample')
         .version('version', 'Show Version', `Version ${process.env.APP_VERSION}`)
         .alias('version', 'v')
@@ -311,7 +333,10 @@ async function init() {
                 break;  
             case 'update-image-tag-k8s':
                 await UpdateImageTag(argv.p,argv.t,argv.h,argv.i)
-                break;                              
+                break;       
+            case 'get-latest-image':
+                await GetLatestImage(argv.name, argv.a);
+                break;                       
             case 'init':
                 await initSample();
                 break;
