@@ -4,15 +4,17 @@ const yenv = require('yenv');
 const { AssumeRole } = require('./auth')
 const AUTH_TYPE = 'CI';
 
+//windows/amd64,linux/amd64,linux/arm64
 async function BuildImageBuildKit(
                                 tag,
                                 dockerFile,
                                 app,
-                                push = 'false',
+                                platformBuild = 'linux/amd64',
                                 filename,
                                 enableCache,
                                 cacheLocation,
                                 assumeRole) {
+                                    
 
     let cache = '';
 
@@ -40,6 +42,7 @@ async function BuildImageBuildKit(
         --local context=.    \
         --local dockerfile=${dockerFile} \
         --opt filename=${filename} \
+        --opt platform=${platformBuild}  \
         --output type=docker,name=${APP_IMAGE}:${tag} \
           ${cache} > image.tar`)
 

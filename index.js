@@ -123,7 +123,14 @@ async function init() {
                 required: false,
                 default: false,
                 description: 'Enable cache layer of build',
-            })       
+            }) 
+            .option('platform-build', {
+                alias: 'p',
+                type: 'strng',
+                required: false,
+                default: "linux/amd64",
+                description: 'Target plataform build',
+            })                  
             .option('location-cache', {
                 alias: 'l',
                 type: 'string',
@@ -137,13 +144,6 @@ async function init() {
                     default: false,
                     description: 'Assume role defined in oni.yaml ',
              })                                          
-            .option('push', {
-                    alias: 'p',
-                    type: 'string',
-                    required: false,
-                    description: 'Push app to registry',
-                    default: 'false'
-                })
                 .example('oni build-image -d "." -t 0.0.1 -a APP_DEFAULT')
                 .strictOptions()
         })
@@ -314,7 +314,7 @@ async function init() {
                 await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d)
                 break;
             case 'build-image':
-                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.push,argv.f,argv.c,argv.l,argv.a);
+                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.p,argv.f,argv.c,argv.l,argv.a);
                 break;
             case 'push-image':
                 await PushImageCrane(argv.name, argv.tag, argv.a);
