@@ -64,6 +64,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     AUTH_TYPE = 'INFRA';
     TMP_CAPACITY_PROVIDERS = APP.APP_CAPACITY_PROVIDERS;
     APP_DEPLOY_TIMEOUT = APP.APP_DEPLOY_TIMEOUT || 600;
+    TPM_EXTRA_CONFIG = APP.EXTRA_CONFIG;
 
 }
 
@@ -89,7 +90,100 @@ async function GetLogFailedContainerDeploy(task) {
 
 }
 
-async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole, disableDeploy) {
+async function DataAgentConfig(datadogConfig,isFargate) {
+    let containerDefinitions = [];
+
+    const containerDefinitionAgent = {
+        essential: true,
+        name: 'datadog-agent',
+        image: 'public.ecr.aws/datadog/agent:latest',
+        ...(!isFargate && {memoryReservation: datadogConfig.APP_MEMORY_RESERVATION} ),
+        ...(!isFargate && { memory: datadogConfig.APP_MEMORY} ),
+        environment: [
+            {
+                "name": "ECS_FARGATE",
+                "value": datadogConfig.ECS_FARGATE.toString()
+            },
+            {
+                "name": "DD_SITE",
+                "value": datadogConfig.SITE.toString()
+            },
+            {
+                "name": "DD_LOGS_ENABLED",
+                "value": datadogConfig.LOGS_ENABLED.toString()
+            }            
+
+
+            
+        ],
+        secrets: [
+            {
+                "name": "DD_API_KEY",
+                "valueFrom": datadogConfig.DD_API_KEY
+            }
+        ]
+    }  
+    console.log('ContainerDefinition DataDogAgent: ', containerDefinitionAgent);
+    containerDefinitions.push(containerDefinitionAgent)
+
+    return containerDefinitions;
+}
+
+async function XRayAgentConfig(isFargate) {
+    let containerDefinitions = [];
+
+    const containerDefinitionXRayDaemon = {
+        essential: true,
+        name: 'xray-daemon',
+        image: 'public.ecr.aws/xray/aws-xray-daemon:latest',
+        // ...(!isFargate && {memoryReservation: datadogConfig.APP_MEMORY_RESERVATION} ),
+        // ...(!isFargate && { memory: datadogConfig.APP_MEMORY} ),
+        logConfiguration: {
+            logDriver: "awslogs",
+            options: {
+                "awslogs-group": `/ecs/ecs-cwagent-fargate`,
+                "awslogs-region": `${APP_REGION}`,
+                "awslogs-stream-prefix": `${APP_NAME}`
+            }
+        }       
+        
+    }  
+    console.log('ContainerDefinition XRayDaemon: ', containerDefinitionXRayDaemon);
+
+    containerDefinitions.push(containerDefinitionXRayDaemon)
+
+
+    const containerDefinitionCloudWatchAgent = {
+        essential: true,
+        name: 'cloudwatch-agent',
+        image: 'public.ecr.aws/cloudwatch-agent/cloudwatch-agent:latest',
+        // ...(!isFargate && {memoryReservation: datadogConfig.APP_MEMORY_RESERVATION} ),
+        // ...(!isFargate && { memory: datadogConfig.APP_MEMORY} ),
+        secrets: [
+            {
+                "name": "CW_CONFIG_CONTENT",
+                "valueFrom": `arn:aws:ssm:${APP_REGION}:${APP_ACCOUNT}:parameter/ecs-cwagent`
+            }
+        ],        
+        logConfiguration: {
+            logDriver: "awslogs",
+            options: {
+                "awslogs-group": `/ecs/ecs-cwagent-fargate`,
+                "awslogs-region": `${APP_REGION}`,
+                "awslogs-stream-prefix": `${APP_NAME}`
+            }
+        }               
+        
+    }  
+    console.log('ContainerDefinition CloudWatchAgent: ', containerDefinitionCloudWatchAgent);
+
+    containerDefinitions.push(containerDefinitionCloudWatchAgent)    
+
+    return containerDefinitions;
+
+}
+
+async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole, disableDeploy, addXRayDaemon) {
     try {
         await initEnvs(app, assumeRole, channelNotification, withoutLoadBalance, isFargate);
 
@@ -186,6 +280,8 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
                 APP_ULIMITS.push({ hardLimit: u.SOFTLIMIT, softLimit: u.HARDLIMIT, name: u.NAME });
             }
 
+        let containerDefinitions = []
+
         let containerDefinition = {
             essential: true,
             image: `${APP_IMAGE}:${tag}`,
@@ -201,7 +297,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             logConfiguration: {
                 logDriver: "awslogs",
                 options: {
-                    "awslogs-group": `/ecs/${CLUSTER_NAME}/${APP_NAME}`,
+                    "awslogs-group": `/ecs/${CLUSTER_NAME}/${APP_NAME}`, //CUSTOMIZADO
                     "awslogs-region": `${APP_REGION}`,
                     "awslogs-stream-prefix": `${APP_NAME}`
                 }
@@ -214,9 +310,23 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         }
 
         console.log('ContainerDefinition: ', containerDefinition);
+
+        containerDefinitions.push(containerDefinition);
+
+        if (TPM_EXTRA_CONFIG.DATADOG_AGENT) {
+            const datadogAgent = await DataAgentConfig(TPM_EXTRA_CONFIG.DATADOG_AGENT,isFargate);
+            containerDefinitions = containerDefinitions.concat(datadogAgent);
+        }
+
+        if (addXRayDaemon) {
+            const xRay = await XRayAgentConfig(isFargate);
+            containerDefinitions = containerDefinitions.concat(xRay);
+        }
+        
+
         const ecs = new aws.ECS();
         const task = await ecs.registerTaskDefinition({
-            containerDefinitions: [containerDefinition],
+            containerDefinitions: containerDefinitions,
             family: `${CLUSTER_NAME}-${APP_NAME}`,
             executionRoleArn: EXECUTION_ROLE_ARN ? EXECUTION_ROLE_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
             placementConstraints: APP_CONSTRAINTS,

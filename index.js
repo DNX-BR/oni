@@ -54,7 +54,14 @@ async function init() {
                         required: false,
                         default: false,
                         description: 'Create task only e not deploy in ecs',
-                    })                    
+                    })      
+                    .option('xray', {
+                        alias: 'x',
+                        type: 'boolean',
+                        required: false,
+                        default: false,
+                        description: 'Add XRay containers to task defintion',
+                    })                                      
                     .option('channel-notification', {
                         alias: 'c',
                         choices: ['slack', 'google', 'teams'],
@@ -311,7 +318,7 @@ async function init() {
                 await DeployS3(argv.name, argv.c, argv.a);
                 break;
             case 'ecs-deploy':
-                await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d)
+                await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d, argv.x)
                 break;
             case 'build-image':
                 await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.p,argv.f,argv.c,argv.l,argv.a);
