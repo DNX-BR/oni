@@ -64,7 +64,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     AUTH_TYPE = 'INFRA';
     TMP_CAPACITY_PROVIDERS = APP.APP_CAPACITY_PROVIDERS;
     APP_DEPLOY_TIMEOUT = APP.APP_DEPLOY_TIMEOUT || 600;
-    TPM_EXTRA_CONFIG = APP.EXTRA_CONFIG;
+    TPM_EXTRA_CONFIG = APP.EXTRA_CONFIG || {};
 
 }
 
