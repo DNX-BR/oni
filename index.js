@@ -270,7 +270,7 @@ async function init() {
                 .example('oni git-clone -t xxxxxx -u repo/nginx.git -b master')
                 .strictOptions()
         })
-        .command('git-commit', 'Git clone command over http', function (yargs, helpOrVersionSetgs) {
+        .command('git-commit', 'Git commit command over https', function (yargs, helpOrVersionSetgs) {
             return yargs.option('message', {
                 alias: 'm',
                 type: 'string',

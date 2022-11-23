@@ -175,11 +175,19 @@ oni build-image
 Command to build with buildkit
 
 Options:
-  -v, --version         Show version                       [bool]
-      --help            Show help                          [bool]
-  -d, --dockerfile      Dockerfile path location           [string] [default: "."]
-  -t, --tag             Image tag                          [string] [mandatory]
-  -n, --name            Application name in oni.yaml       [string] [mandatory]
+  -v, --version         Show Version                                  [bool]
+      --help            Exibe ajuda                                   [bool]
+  -d, --dockerfile      Dockerfile path location                      [string] [default: "."]
+  -t, --tag             Image tag                                     [string] [mandatory]
+  -n, --name            Application name in oni.yml                   [string] [mandatory]
+  -f, --filename        dockerfile name                               [string] [default: "./Dockerfile"]
+  -c, --cache           Enable cache layer of build                   [bool] [default: false]
+  -p, --platform-build  Target plataform build                        [default: "linux/amd64"]
+  -l, --location-cache  Directory for storage cache                   [string] [default: "cache_build"]
+  -a, --assume-role     Assume role defined in oni.yaml               [bool] [default: false]
+
+Exemplos:
+  oni build-image -d "." -t 0.0.1 -a APP_DEFAULT
 ```
 
 ### oni push-image
@@ -223,6 +231,52 @@ Options:
   -n, --name                  Application name defined in oni.yaml    [string] [mandatory] [default: "APP_DEFAULT"]
   -a, --assume-role           Assume role defined in oni.yaml         [bool] [default: false]
 ```
+
+### oni update-image-tag-k8s
+
+```bash
+oni update-image-tag-k8s [options]
+
+Command for update kubernetes manifest image tag
+
+Options:
+  -v, --version      Show Version                                     [bool]
+      --help         Exibe ajuda                                      [bool]
+  -p, --path-file    path to file values.yaml or deploment.yaml       [string] [mandatory]
+  -t, --tag          Tag value for update image                       [string] [mandatory]
+  -h, --helm         Is tag in helm values                            [bool] [default: false]
+  -i, --image-index  Image index in container array of deployment     [string] [default: 0]
+```
+
+### oni git-clone
+
+```bash
+oni git-clone [options]
+
+Command for clone kubernetes manifest repository
+
+Options:
+  -v, --version      Show Version                                     [bool]
+      --help         Exibe ajuda                                      [bool]
+  -p, --path-file    path to file values.yaml or deploment.yaml       [string] [mandatory]
+  -t, --tag          Tag value for update image                       [string] [mandatory]
+  -h, --helm         Is tag in helm values                            [bool] [default: false]
+  -i, --image-index  Image index in container array of deployment     [string] [default: 0]
+```
+
+### oni git-commit
+
+```bash
+oni git-commit [options]
+
+Command for commit git repository kubernetes manifest
+
+Options:
+  -v, --version  Show Version                                         [bool]
+      --help     Exibe ajuda                                          [bool]
+  -m, --message  git commit message                                   [string] [mandatory]
+```
+
 
 ## Examples
 
