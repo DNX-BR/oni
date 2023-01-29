@@ -45,7 +45,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     APP_IMAGE = APP.APP_IMAGE;
     APP_NAME = APP.APP_NAME;
     APP_MEMORY = APP.APP_MEMORY;
-    APP_CPU = APP.APP_CPU
+    APP_CPU = APP.APP_CPU || 0;
     APP_MEMORY_RESERVATION = APP.APP_MEMORY_RESERVATION;
     TMP_PORTS = APP.APP_PORTS;
     APP_REGION = APP.APP_REGION;
@@ -285,8 +285,9 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         let containerDefinition = {
             essential: true,
             image: `${APP_IMAGE}:${tag}`,
-            memoryReservation: APP_MEMORY_RESERVATION,
-            memory: APP_MEMORY,
+            ...(!isFargate && {memoryReservation: APP_MEMORY_RESERVATION}),
+            ...(!isFargate && {memory: APP_MEMORY}),
+            ...((APP_CPU > 0 && !isFargate)  && {cpu: APP_CPU}),
             name: APP_NAME,
             command: APP_CMDS,
             environment: APP_VARIABLES,
@@ -302,11 +303,6 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
                     "awslogs-stream-prefix": `${APP_NAME}`
                 }
             },
-        }
-
-        if (isFargate) {
-            delete containerDefinition.memory;
-            delete containerDefinition.memoryReservation;
         }
 
         console.log('ContainerDefinition: ', containerDefinition);
