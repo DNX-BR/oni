@@ -1,10 +1,10 @@
 const aws = require('aws-sdk');
 const AUTH_TYPE = 'INFRA';
 
-async function GetSecret(secretName, region, assumeRole) {
+async function GetSecrets(secretName, region, assumeRole) {
 
     let confCredential = {
-        //apiVersion: '2016-11-15',
+        apiVersion: '',
         region: region
     };
 
@@ -35,8 +35,7 @@ async function GetSecret(secretName, region, assumeRole) {
     return secretList;
 }
 
-async function run() {
-    await GetSecret('arn:aws:secretsmanager:us-east-1:021667863185:secret:/ecs/app/backend-BszGr4', 'us-east-1', false);
-}
 
-run();
+module.exports = {
+    GetSecrets
+}

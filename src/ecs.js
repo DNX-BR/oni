@@ -3,6 +3,7 @@ const aws = require('aws-sdk');
 const { AssumeRole } = require('./auth');
 const notifications = require('./notifications');
 const util = require('./utils');
+const { GetSecrets } = require('./secretmanager');
 
 let APP;
 let APP_IMAGE;
@@ -27,6 +28,7 @@ let TMP_CONSTRAINTS;
 let TASK_ARN;
 let EXECUTION_ROLE_ARN;
 let TMP_CAPACITY_PROVIDERS;
+let APP_SECRET_EXTRACT;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
@@ -65,6 +67,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     TMP_CAPACITY_PROVIDERS = APP.APP_CAPACITY_PROVIDERS;
     APP_DEPLOY_TIMEOUT = APP.APP_DEPLOY_TIMEOUT || 600;
     TPM_EXTRA_CONFIG = APP.EXTRA_CONFIG || {};
+    APP_SECRET_EXTRACT = APP.APP_SECRET_EXTRACT;
 
 }
 
@@ -79,7 +82,7 @@ async function GetLogFailedContainerDeploy(task) {
             startFromHead: false,
             limit: 200
         }).promise();
-    
+
         console.log('Log from stopped container');
         for (const log of logs.$response.data.events) {
             console.log(log.message);
@@ -90,15 +93,15 @@ async function GetLogFailedContainerDeploy(task) {
 
 }
 
-async function DataAgentConfig(datadogConfig,isFargate) {
+async function DataAgentConfig(datadogConfig, isFargate) {
     let containerDefinitions = [];
 
     const containerDefinitionAgent = {
         essential: true,
         name: 'datadog-agent',
         image: 'public.ecr.aws/datadog/agent:latest',
-        ...(!isFargate && {memoryReservation: datadogConfig.APP_MEMORY_RESERVATION} ),
-        ...(!isFargate && { memory: datadogConfig.APP_MEMORY} ),
+        ...(!isFargate && { memoryReservation: datadogConfig.APP_MEMORY_RESERVATION }),
+        ...(!isFargate && { memory: datadogConfig.APP_MEMORY }),
         environment: [
             {
                 "name": "ECS_FARGATE",
@@ -111,10 +114,10 @@ async function DataAgentConfig(datadogConfig,isFargate) {
             {
                 "name": "DD_LOGS_ENABLED",
                 "value": datadogConfig.LOGS_ENABLED.toString()
-            }            
+            }
 
 
-            
+
         ],
         secrets: [
             {
@@ -122,7 +125,7 @@ async function DataAgentConfig(datadogConfig,isFargate) {
                 "valueFrom": datadogConfig.DD_API_KEY
             }
         ]
-    }  
+    }
     console.log('ContainerDefinition DataDogAgent: ', containerDefinitionAgent);
     containerDefinitions.push(containerDefinitionAgent)
 
@@ -145,9 +148,9 @@ async function XRayAgentConfig(isFargate) {
                 "awslogs-region": `${APP_REGION}`,
                 "awslogs-stream-prefix": `${APP_NAME}`
             }
-        }       
-        
-    }  
+        }
+
+    }
     console.log('ContainerDefinition XRayDaemon: ', containerDefinitionXRayDaemon);
 
     containerDefinitions.push(containerDefinitionXRayDaemon)
@@ -164,7 +167,7 @@ async function XRayAgentConfig(isFargate) {
                 "name": "CW_CONFIG_CONTENT",
                 "valueFrom": `arn:aws:ssm:${APP_REGION}:${APP_ACCOUNT}:parameter/ecs-cwagent`
             }
-        ],        
+        ],
         logConfiguration: {
             logDriver: "awslogs",
             options: {
@@ -172,12 +175,12 @@ async function XRayAgentConfig(isFargate) {
                 "awslogs-region": `${APP_REGION}`,
                 "awslogs-stream-prefix": `${APP_NAME}`
             }
-        }               
-        
-    }  
+        }
+
+    }
     console.log('ContainerDefinition CloudWatchAgent: ', containerDefinitionCloudWatchAgent);
 
-    containerDefinitions.push(containerDefinitionCloudWatchAgent)    
+    containerDefinitions.push(containerDefinitionCloudWatchAgent)
 
     return containerDefinitions;
 
@@ -219,6 +222,12 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
                 APP_VARIABLES.push({ name: key, value: value.toString() })
             }
         }
+
+
+        if (APP_SECRET_EXTRACT)
+            APP_SECRETS = APP_SECRETS.concat(await GetSecrets(APP_SECRET_EXTRACT, APP_REGION, assumeRole));
+
+        aws.config.update(confCredential)
 
         for (var idx in TPM_SECRETS) {
             var item = TPM_SECRETS[idx];
@@ -285,9 +294,9 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         let containerDefinition = {
             essential: true,
             image: `${APP_IMAGE}:${tag}`,
-            ...(!isFargate && {memoryReservation: APP_MEMORY_RESERVATION}),
-            ...(!isFargate && {memory: APP_MEMORY}),
-            ...((APP_CPU > 0 && !isFargate)  && {cpu: APP_CPU}),
+            ...(!isFargate && { memoryReservation: APP_MEMORY_RESERVATION }),
+            ...(!isFargate && { memory: APP_MEMORY }),
+            ...((APP_CPU > 0 && !isFargate) && { cpu: APP_CPU }),
             name: APP_NAME,
             command: APP_CMDS,
             environment: APP_VARIABLES,
@@ -310,7 +319,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         containerDefinitions.push(containerDefinition);
 
         if (TPM_EXTRA_CONFIG.DATADOG_AGENT) {
-            const datadogAgent = await DataAgentConfig(TPM_EXTRA_CONFIG.DATADOG_AGENT,isFargate);
+            const datadogAgent = await DataAgentConfig(TPM_EXTRA_CONFIG.DATADOG_AGENT, isFargate);
             containerDefinitions = containerDefinitions.concat(datadogAgent);
         }
 
@@ -318,7 +327,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             const xRay = await XRayAgentConfig(isFargate);
             containerDefinitions = containerDefinitions.concat(xRay);
         }
-        
+
 
         const ecs = new aws.ECS();
         const task = await ecs.registerTaskDefinition({
@@ -387,7 +396,7 @@ async function stopDeployment(deploymentId) {
         if (taskDetails.$response.data.tasks[0].containers)
             console.log('Stopped Reason: ', taskDetails.$response.data.tasks[0].containers[0].reason)
 
-        await GetLogFailedContainerDeploy( lastTask);
+        await GetLogFailedContainerDeploy(lastTask);
 
         process.exit(1);
 
