@@ -276,7 +276,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
 
         if (TMP_CONSTRAINTS)
             for (const CONST of TMP_CONSTRAINTS) {
-                APP_CONSTRAINTS.push({ expression: CONST[0], type: CONST[1] });
+                APP_CONSTRAINTS.push({ expression: CONST.EXPRESSION, type: CONST.TYPE });
             }
 
         if (APP_COMMAND)
