@@ -26,17 +26,17 @@ async function initEnvs(app, assumeRole) {
     const env = yenv('oni.yaml', process.env.NODE_ENV)
     APP = env[app];
     await util.ValidateStaticOniRequirements(APP, assumeRole);
-    APP_SRC = APP.APP_SRC;
-    APP_S3_BUCKET = APP.APP_S3_BUCKET;
-    APP_NAME = APP.APP_NAME
-    APP_REGION = APP.APP_REGION;
-    CF_DISTRIBUTION_ID = APP.CF_DISTRIBUTION_ID;
-    CACHE_CONTROL = APP.CACHE_CONTROL;
+    APP_SRC = APP.APP_SRC || '';
+    APP_S3_BUCKET = APP.APP_S3_BUCKET || '';
+    APP_NAME = APP.APP_NAME || '';
+    APP_REGION = APP.APP_REGION || '';
+    CF_DISTRIBUTION_ID = APP.CF_DISTRIBUTION_ID || '';
+    CACHE_CONTROL = APP.CACHE_CONTROL || '';
     TMP_FILTERS = APP.FILTERS || [];
     AUTH_TYPE = 'INFRA';
 }
 
-async function UploadS3(app, assumeRole) {
+async function UploadS3(app, assumeRole, disableACL) {
     let cred;
     let confCredential;
     if (assumeRole) {
@@ -49,39 +49,54 @@ async function UploadS3(app, assumeRole) {
         }
 
     }
-    const s3Client = await new S3Client.S3Client({ region: APP_REGION, credentials: confCredential });
-    const syncClient = await new S3SyncClient({ client: s3Client });
 
-    let commandInputConfig = {
-        ACL: 'public-read', ContentType: (syncCommandInput) => (
-            mime.lookup(syncCommandInput.Key) || 'text/html'
-        )
-    };
+    try {
+        const s3Client = await new S3Client.S3Client({ region: APP_REGION, credentials: confCredential });
+        const syncClient = await new S3SyncClient({ client: s3Client });
 
-    if (CACHE_CONTROL)
-        commandInputConfig.CacheControl = CACHE_CONTROL;
+        let commandInputConfig;
 
-    if (TMP_FILTERS.EXCLUDE)
-        for (const filter of TMP_FILTERS.EXCLUDE) {
-            if (filter.ENDSWITH)
-                FILTERS.push({ exclude: (key) => key.endsWith(filter.ENDSWITH) });
-            if (filter.STARTSWITH)
-                FILTERS.push({ exclude: (key) => key.endsWith(filter.STARTSWITH) });
-        }
+        commandInputConfig = {
+            ...(!disableACL && { ACL: 'public-read' }), ContentType: (syncCommandInput) => (
+                mime.lookup(syncCommandInput.Key) || 'text/html'
+            )
+        };
 
-    if (TMP_FILTERS.INCLUDE)
-        for (const filter of TMP_FILTERS.INCLUDE) {
-            if (filter.ENDSWITH)
-                FILTERS.push({ include: (key) => key.endsWith(filter.ENDSWITH) });
-            if (filter.STARTSWITH)
-                FILTERS.push({ include: (key) => key.endsWith(filter.STARTSWITH) });
-        }
+        if (CACHE_CONTROL)
+            commandInputConfig.CacheControl = CACHE_CONTROL;
 
-    await syncClient.sync(APP_SRC, APP_S3_BUCKET, {
-        dryRun: false,
-        filters: FILTERS,
-        del: true, commandInput: commandInputConfig
-    });
+        if (TMP_FILTERS.EXCLUDE)
+            for (const filter of TMP_FILTERS.EXCLUDE) {
+                if (filter.ENDSWITH)
+                    FILTERS.push({ exclude: (key) => key.endsWith(filter.ENDSWITH) });
+                if (filter.STARTSWITH)
+                    FILTERS.push({ exclude: (key) => key.endsWith(filter.STARTSWITH) });
+            }
+
+        if (TMP_FILTERS.INCLUDE)
+            for (const filter of TMP_FILTERS.INCLUDE) {
+                if (filter.ENDSWITH)
+                    FILTERS.push({ include: (key) => key.endsWith(filter.ENDSWITH) });
+                if (filter.STARTSWITH)
+                    FILTERS.push({ include: (key) => key.endsWith(filter.STARTSWITH) });
+            }
+
+        await syncClient.sync(APP_SRC, APP_S3_BUCKET, {
+            dryRun: false,
+            filters: FILTERS,
+            del: true, commandInput: commandInputConfig
+        });
+    } catch (error) {
+        console.error(error)
+        process.exit(1);
+    }
+
+
+}
+
+async function InvalidateCloudFrontOnly(app, assumeRole) {
+    await initEnvs(app, assumeRole);
+    await InvalidateCloudFront(app, assumeRole);
 
 }
 
@@ -116,10 +131,10 @@ async function InvalidateCloudFront(app, assumeRole) {
     }).promise();
 }
 
-async function DeployS3(app, channelNotification, assumeRole) {
+async function DeployS3(app, channelNotification, assumeRole, disableACL) {
     try {
         await initEnvs(app, assumeRole);
-        await UploadS3(app, assumeRole);
+        await UploadS3(app, assumeRole, disableACL);
         await InvalidateCloudFront(app, assumeRole);
 
         if (channelNotification)
@@ -133,6 +148,8 @@ async function DeployS3(app, channelNotification, assumeRole) {
 
 }
 
+
 module.exports = {
-    DeployS3
+    DeployS3,
+    InvalidateCloudFrontOnly
 }

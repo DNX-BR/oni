@@ -4,7 +4,7 @@ const { BuildImageBuildKit, PushImageCrane } = require('./src/docker');
 const { CloneRepo, CommitPushChanges } = require('./src/git');
 const { DeployECS } = require('./src/ecs');
 const { initSample, ScanImageTrivy, UpdateImageTag } = require('./src/utils');
-const { DeployS3 } = require('./src/s3');
+const { DeployS3, InvalidateCloudFrontOnly } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
 const { GetLatestImage } = require('./src/ecr');
@@ -89,6 +89,13 @@ async function init() {
                     default: false,
                     description: 'Assume role defined in oni.yaml ',
                 })
+                .option('disable-acl', {
+                    alias: 'd',
+                    type: 'boolean',
+                    required: false,
+                    default: false,
+                    description: 'Disable create ACL read-public ',
+                })
                 .option('channel-notification', {
                     alias: 'c',
                     choices: ['slack', 'google', 'teams'],
@@ -99,6 +106,27 @@ async function init() {
                 .example('oni deploy-static -n MY_APP')
                 .strictOptions()
         })
+
+
+        .command('invalidate-cloudfront', 'Invalidate Cloudfront distribuition', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('name', {
+                alias: 'n',
+                type: 'string',
+                required: true,
+                description: 'Application name defined in oni.yml',
+                default: 'APP_DEFAULT'
+            })
+                .option('assume-role', {
+                    alias: 'a',
+                    type: 'boolean',
+                    required: false,
+                    default: false,
+                    description: 'Assume role defined in oni.yaml ',
+                })
+                .example('oni deploy-static -n MY_APP')
+                .strictOptions()
+        })
+
         .command('build-image', 'command for build with buildkit', function (yargs, helpOrVersionSetgs) {
             return yargs.option('dockerfile', {
                 alias: 'd',
@@ -315,7 +343,7 @@ async function init() {
     if (await fs.existsSync('./oni.yaml') || command[0] === 'init' || command[0] === 'git-clone' || command[0] === 'git-commit' || command[0] === 'update-image-tag-k8s') {
         switch (command[0]) {
             case 'deploy-static':
-                await DeployS3(argv.name, argv.c, argv.a);
+                await DeployS3(argv.name, argv.c, argv.a,argv.d);
                 break;
             case 'ecs-deploy':
                 await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d, argv.x)
@@ -343,7 +371,10 @@ async function init() {
                 break;       
             case 'get-latest-image':
                 await GetLatestImage(argv.name, argv.a);
-                break;                       
+                break;       
+            case 'invalidate-cloudfront':
+                await InvalidateCloudFrontOnly(argv.name, argv.a);
+                break;                     
             case 'init':
                 await initSample();
                 break;

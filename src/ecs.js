@@ -68,6 +68,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     APP_DEPLOY_TIMEOUT = APP.APP_DEPLOY_TIMEOUT || 600;
     TPM_EXTRA_CONFIG = APP.EXTRA_CONFIG || {};
     APP_SECRET_EXTRACT = APP.APP_SECRET_EXTRACT;
+    APP_HOOKS = APP.APP_HOOKS || [];
 
 }
 
@@ -432,7 +433,10 @@ async function CodeDeploy(taskARN, appName = 'APP_DEFAULT', appPort = 8080, cred
                         }
                     }
                 }
-            ]
+            ],
+            ...(APP_HOOKS.length > 0 && {
+                Hooks: APP_HOOKS
+            })
         }
 
 
