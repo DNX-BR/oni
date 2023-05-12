@@ -29,6 +29,7 @@ let TASK_ARN;
 let EXECUTION_ROLE_ARN;
 let TMP_CAPACITY_PROVIDERS;
 let APP_SECRET_EXTRACT;
+let APP_HOOKS;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
