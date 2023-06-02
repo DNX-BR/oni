@@ -30,6 +30,8 @@ let EXECUTION_ROLE_ARN;
 let TMP_CAPACITY_PROVIDERS;
 let APP_SECRET_EXTRACT;
 let APP_HOOKS;
+let EXTRA_CONTAINERS;
+let APP_LINKS;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
@@ -70,6 +72,8 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     TPM_EXTRA_CONFIG = APP.EXTRA_CONFIG || {};
     APP_SECRET_EXTRACT = APP.APP_SECRET_EXTRACT;
     APP_HOOKS = APP.APP_HOOKS || [];
+    EXTRA_CONTAINERS = APP.EXTRA_CONTAINERS || [];
+    APP_LINKS = APP.APP_LINKS;
 
 }
 
@@ -186,6 +190,50 @@ async function XRayAgentConfig(isFargate) {
 
     return containerDefinitions;
 
+}
+
+async function ExtraContainers(extraContainers,tag) {
+    let listContainers = [];
+    for (const extra of extraContainers) {
+        const containerDefinition = {
+            name: extra.APP_NAME,
+            image: `${extra.APP_IMAGE}:${tag}`,
+            ...(!extra.IS_FARGATE && {memoryReservation: extra.APP_MEMORY_RESERVATION} ),
+            ...(!extra.IS_FARGATE && { memory: extra.APP_MEMORY} ),
+            ...(!extra.IS_FARGATE && { cpu: extra.APP_CPU} ),
+            ...(extra.APP_LINKS  && {links: extra.APP_LINKS}),       
+            environment: extra.APP_VARIABLES.map(v => {
+                let keyVariables = {}
+                for (const key in v) {
+                    keyVariables = {
+                        name: key, value: v[key].toString()
+                    }
+                }
+                return keyVariables;
+            }),
+            secrets: extra.APP_SECRETS.map(v => {
+                let keyVariables = {}
+                for (const key in v) {
+                    keyVariables = {
+                        name: key, valueFrom: v[key]
+                    }
+                }
+                return keyVariables;
+            }),
+            logConfiguration: {
+                logDriver: "awslogs",
+                options: {
+                    "awslogs-group": `/ecs/${CLUSTER_NAME}/${extra.APP_NAME}`, //CUSTOMIZADO
+                    "awslogs-region": `${APP_REGION}`,
+                    "awslogs-stream-prefix": `${extra.APP_NAME}`
+                }
+            },
+    
+        }      
+        listContainers.push(containerDefinition)  
+    }
+
+    return listContainers;
 }
 
 async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotification, assumeRole, disableDeploy, addXRayDaemon) {
@@ -306,6 +354,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             portMappings: APP_PORTS,
             mountPoints: APP_MOUNTPOINTS,
             ulimits: APP_ULIMITS,
+            ...(APP_LINKS  && {links: APP_LINKS}),
             logConfiguration: {
                 logDriver: "awslogs",
                 options: {
@@ -316,7 +365,6 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             },
         }
 
-        console.log('ContainerDefinition: ', containerDefinition);
 
         containerDefinitions.push(containerDefinition);
 
@@ -330,6 +378,15 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             containerDefinitions = containerDefinitions.concat(xRay);
         }
 
+        if (EXTRA_CONTAINERS.length > 0) {
+            const extraContainersDefintion = await ExtraContainers(EXTRA_CONTAINERS,tag)
+            containerDefinitions = containerDefinitions.concat(extraContainersDefintion)
+        }
+
+
+        console.log('ContainerDefinition: ', containerDefinitions);
+
+        
 
         const ecs = new aws.ECS();
         const task = await ecs.registerTaskDefinition({
