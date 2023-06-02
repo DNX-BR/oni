@@ -106,6 +106,17 @@ development:                              # Oni Workspace defined by variable NO
     APP_VARIABLES:                        # Lambda environment variables
       - KEY: VALUE    
     FUNCTION_S3: bucket                   # Bucket for deploy lambda if size of package > 50Mb
+    APP_LINKS:                            # To connect to another container in EXTRA_CONTAINERs. 
+      - "CONTAINER_NAME:ALIAS"            # The sintaxe is: the CONTAINER_NAME is a name value of variable APP_NAME in the block EXTRA_CONTAINERS.
+    EXTRA_CONTAINERS:                     # Add this block to add another container um same task definition.
+      - APP_NAME: XXXXXXXXXXX
+        APP_IMAGE: XXXXXXXXXXXXXXXX
+        IS_FARGATE: false
+        APP_VARIABLES: [] 
+        APP_SECRETS: []
+        APP_MEMORY: 1024
+        APP_MEMORY_RESERVATION: 1024
+        APP_CPU: 1024
     
   # In some cases, such as ECR, a different account can be used for image centering.
   # To perform the push to this account, oni assumes specific to it.  
