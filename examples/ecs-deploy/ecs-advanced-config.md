@@ -92,6 +92,13 @@ development:
 
 > Note: In the sections, such as: APP_NAME. You don't have to put exactly like the example. You can use small case letters, just remember to put the exactly same name to avoid errors in the creation of the pipeline.
 
+## Only create task definition without deploy
+
+To create task definition without add parameter `-d`
+
+```bash
+oni ecs-deploy -n "APP_DEFAULT_1" -t 0.0.1 -d
+```
 
 ## Deploy commands
 

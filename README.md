@@ -145,6 +145,7 @@ Options:
   -f, --fargate               ECS deploy type Fargate                 [bool] [default: false]
   -a, --assume-role           Assume role defined in oni.yaml         [bool] [default: false]
   -c, --channel-notification  Notification channel to send message after deploy app  [string] [options: "slack", "google", "teams"]
+  -d, --disable-deploy        Only create task definition, dont deploy in ecs [bool]
 ```
 
 ### oni deploy-static
