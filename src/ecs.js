@@ -32,6 +32,7 @@ let APP_SECRET_EXTRACT;
 let APP_HOOKS;
 let EXTRA_CONTAINERS;
 let APP_LINKS;
+let APP_STOP_TIMEOUT;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
@@ -74,6 +75,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     APP_HOOKS = APP.APP_HOOKS || [];
     EXTRA_CONTAINERS = APP.EXTRA_CONTAINERS || [];
     APP_LINKS = APP.APP_LINKS;
+    APP_STOP_TIMEOUT = APP.APP_STOP_TIMEOUT || 30;
 
 }
 
@@ -353,6 +355,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             secrets: APP_SECRETS,
             portMappings: APP_PORTS,
             mountPoints: APP_MOUNTPOINTS,
+            stopTimeout: APP_STOP_TIMEOUT,
             ulimits: APP_ULIMITS,
             ...(APP_LINKS  && {links: APP_LINKS}),
             logConfiguration: {
