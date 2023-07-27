@@ -277,7 +277,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
 
 
         if (APP_SECRET_EXTRACT)
-            APP_SECRETS = APP_SECRETS.concat(await GetSecrets(APP_SECRET_EXTRACT, APP_REGION, assumeRole));
+            APP_SECRETS = APP_SECRETS.concat(await GetSecrets(APP_SECRET_EXTRACT, APP_REGION, assumeRole,app));
 
         aws.config.update(confCredential)
 
