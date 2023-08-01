@@ -195,13 +195,44 @@ async function ScanImageTrivy(output = 'default',image = "none") {
   }
 
   if (output === 'default') {
-    const result = await shell.exec(`trivy --quiet image ${image === "none" || image === undefined ? '--input image.tar': `${image}` }`, { silent: false });
+    const result = await shell.exec(`trivy --quiet image ${image === "none" || image === undefined ? '--input image.tar': `${image}` } --severity CRITICAL,HIGH`, { silent: false });
   } {
-    const result = await shell.exec(`trivy --quiet image --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} ${image === "none" || image === undefined ? '--input image.tar': `${image}` }`, { silent: false });
+    const result = await shell.exec(`trivy --quiet image --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} ${image === "none" || image === undefined ? '--input image.tar': `${image}` } --severity CRITICAL,HIGH`, { silent: false });
     console.log(`Generation file: report-trity.${extension}`);
   }
 
 }
+
+
+async function ScanFsTrivy(output = 'default') {
+  let extension;
+  switch (output) {
+    case 'html':
+      extension = 'html'
+      break;
+    case 'junit':
+      extension = 'xml'
+      break;
+    case 'gitlab':
+      extension = 'xml'
+      break;
+    case 'gitlab-codequality':
+      extension = 'xml'
+      break;
+    default:
+      extension = '';
+      break;
+  }
+
+  if (output === 'default') {
+    const result = await shell.exec(`trivy fs --scanners vuln,secret,config ./ --severity CRITICAL,HIGH`, { silent: false });
+  } {
+    const result = await shell.exec(`trivy fs --scanners vuln,secret,config --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} ./ --severity CRITICAL,HIGH`, { silent: false });
+    console.log(`Generation file: report-trity.${extension}`);
+  }
+
+}
+
 
 async function UpdateImageTag(pathFile,tag, helm, imageIndex = 0) {
   try {    
@@ -227,5 +258,6 @@ module.exports = {
   ValidateStaticOniRequirements,
   ValidateECSMinimunRequirements,
   ScanImageTrivy,
+  ScanFsTrivy,
   UpdateImageTag
 }

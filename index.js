@@ -3,7 +3,7 @@ const fs = require('fs');
 const { BuildImageBuildKit, PushImageCrane } = require('./src/docker');
 const { CloneRepo, CommitPushChanges } = require('./src/git');
 const { DeployECS } = require('./src/ecs');
-const { initSample, ScanImageTrivy, UpdateImageTag } = require('./src/utils');
+const { initSample, ScanImageTrivy, UpdateImageTag, ScanFsTrivy } = require('./src/utils');
 const { DeployS3, InvalidateCloudFrontOnly } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
@@ -253,6 +253,18 @@ async function init() {
                 .example('oni scan-image')
                 .strictOptions()
         })
+        .command('scan-fs', 'scan filesystem using trivy scan', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('output', {
+                alias: 'o',
+                choices: ['default', 'html', 'junit', 'gitlab', 'gitlab-codequality'],
+                type: 'string',
+                required: false,
+                default: 'default',
+                description: 'Output format type',
+            })          
+            .example('oni scan-image')
+            .strictOptions()
+        })        
         .command('update-image-tag-k8s', 'Update image tag in helm values or direct in deployment manifest', function (yargs, helpOrVersionSetgs) {
             return yargs.option('path-file', {
                 alias: 'p',
@@ -367,6 +379,10 @@ async function init() {
             case 'scan-image':
                 await ScanImageTrivy(argv.o,argv.i);
                 break;
+            case 'scan-fs':
+                await ScanFsTrivy(argv.o);
+                break;
+                                
             case 'git-clone':
                 await CloneRepo(argv.t, argv.u, argv.b);
                 break;          
