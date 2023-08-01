@@ -365,7 +365,7 @@ async function init() {
                 await UpdateLambda(argv.name, argv.file, argv.c, argv.a);
                 break;
             case 'scan-image':
-                await ScanImageTrivy(argv.o);
+                await ScanImageTrivy(argv.o,argv.i);
                 break;
             case 'git-clone':
                 await CloneRepo(argv.t, argv.u, argv.b);
