@@ -174,7 +174,7 @@ async function ValidateECSMinimunRequirements(oni, assumeRole, {
 
 }
 
-async function ScanImageTrivy(output = 'default') {
+async function ScanImageTrivy(output = 'default',image = "none") {
   let extension;
   switch (output) {
     case 'html':
@@ -195,9 +195,9 @@ async function ScanImageTrivy(output = 'default') {
   }
 
   if (output === 'default') {
-    const result = await shell.exec(`trivy --quiet image --input image.tar`, { silent: false });
+    const result = await shell.exec(`trivy --quiet image ${image === "none" || image === undefined ? '--input image.tar': `${image}` }`, { silent: false });
   } {
-    const result = await shell.exec(`trivy --quiet image --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} --input image.tar`, { silent: false });
+    const result = await shell.exec(`trivy --quiet image --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} ${image === "none" || image === undefined ? '--input image.tar': `${image}` }`, { silent: false });
     console.log(`Generation file: report-trity.${extension}`);
   }
 

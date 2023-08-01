@@ -234,7 +234,7 @@ async function init() {
                 .example('oni lambda-deploy -a APP_DEFAULT -z /tmp/package.zip')
                 .strictOptions()
         })
-        .command('scan-image', 'scan image.tar generated in build-image step using trivy scan', function (yargs, helpOrVersionSetgs) {
+        .command('scan-image', 'scan image.tar  generated in build-image or docker builk step using trivy scan', function (yargs, helpOrVersionSetgs) {
             return yargs.option('output', {
                 alias: 'o',
                 choices: ['default', 'html', 'junit', 'gitlab', 'gitlab-codequality'],
@@ -242,7 +242,14 @@ async function init() {
                 required: false,
                 default: 'default',
                 description: 'Output format type',
-            })
+            }).
+            option('image', {
+                alias: 'i',
+                type: 'string',
+                required: false,
+                description: 'image name',
+                default: 'none'
+            })            
                 .example('oni scan-image')
                 .strictOptions()
         })
