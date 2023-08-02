@@ -233,6 +233,12 @@ async function ScanFsTrivy(output = 'default') {
 
 }
 
+async function ScanSast(outputFormat) {
+    console.log(`Init scan sast`);
+    const result = await shell.exec(`semgrep scan --config auto --${outputFormat}`, { silent: false });
+}
+
+
 
 async function UpdateImageTag(pathFile,tag, helm, imageIndex = 0) {
   try {    
@@ -259,5 +265,6 @@ module.exports = {
   ValidateECSMinimunRequirements,
   ScanImageTrivy,
   ScanFsTrivy,
-  UpdateImageTag
+  UpdateImageTag,
+  ScanSast
 }

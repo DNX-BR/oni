@@ -3,7 +3,7 @@ const fs = require('fs');
 const { BuildImageBuildKit, PushImageCrane } = require('./src/docker');
 const { CloneRepo, CommitPushChanges } = require('./src/git');
 const { DeployECS } = require('./src/ecs');
-const { initSample, ScanImageTrivy, UpdateImageTag, ScanFsTrivy } = require('./src/utils');
+const { initSample, ScanImageTrivy, UpdateImageTag, ScanFsTrivy, ScanSast } = require('./src/utils');
 const { DeployS3, InvalidateCloudFrontOnly } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
@@ -262,9 +262,21 @@ async function init() {
                 default: 'default',
                 description: 'Output format type',
             })          
-            .example('oni scan-image')
+            .example('oni scan-fs')
             .strictOptions()
         })        
+        .command('scan-sast', 'run sast in code using semgrep', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('output', {
+                alias: 'o',
+                choices: ['text','emacs','json','gitlab-sast','gitlab-secrets','junit-xml','sarif','vim'],
+                type: 'string',
+                required: false,
+                default: 'text',
+                description: 'Output format type',
+            })          
+            .example('oni scan-sast')
+            .strictOptions()
+        }) 
         .command('update-image-tag-k8s', 'Update image tag in helm values or direct in deployment manifest', function (yargs, helpOrVersionSetgs) {
             return yargs.option('path-file', {
                 alias: 'p',
@@ -382,7 +394,9 @@ async function init() {
             case 'scan-fs':
                 await ScanFsTrivy(argv.o);
                 break;
-                                
+            case 'scan-sast':
+                await ScanFsTrivy(argv.o);
+                break;                                
             case 'git-clone':
                 await CloneRepo(argv.t, argv.u, argv.b);
                 break;          

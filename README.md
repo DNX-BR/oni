@@ -67,6 +67,7 @@ development:                              # Oni Workspace defined by variable NO
     APP_MEMORY_RESERVATION: 512           # Container memory reservation
     APP_PORTS:                            # Container ports to expose
       - 8080    
+    APP_SECRET_EXTRACT: secret-arn        # Extract all secrets key from secret manager and set in task definition
     APP_VARIABLES:                        # Container variables
       - KEY: VALUE    
     APP_SECRETS:                          # Container secret parameter from ssm or secrets manager
@@ -228,14 +229,43 @@ Options:
   -v, --version         Show version                       [bool]
       --help            Show help                          [bool]
   -o, --output          Output format type                 [string] [options: "default", "html", "junit", "gitlab", "gitlab-codequality"] [default: "default"]
+  -i, --image    image name                                [string] [default: "none"]
 ```
+
+
+### oni scan-fs
+
+```bash
+oni scan-fs
+
+Command to scan filesysetm using trivy scan
+
+Options:
+  -v, --version         Show version                       [bool]
+      --help            Show help                          [bool]
+  -o, --output          Output format type                 [string] [options: "default", "html", "junit", "gitlab", "gitlab-codequality"] [default: "default"]
+```
+
+### oni scan-sast
+
+```bash
+oni scan-sast
+
+Command to scan filesysetm using trivy scan
+
+Options:
+  -v, --version         Show version                       [bool]
+      --help            Show help                          [bool]
+  -o, --output          Output format type                 [string] [options:"text", "emacs", "json", "gitlab-sast", "gitlab-secrets","junit-xml", "sarif", "vim"] [default: "text"]
+```
+
 
 ### oni get-latest-image
 
 ```bash
 oni get-latest-image [options]
 
-Command for get latest image to ecr
+Command for get latest image to ecr for specific repo
 
 Options:
   -v, --version               Show version                            [bool]
