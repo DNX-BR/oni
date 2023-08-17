@@ -203,7 +203,6 @@ async function ScanImageTrivy(output = 'default',image = "none") {
 
 }
 
-
 async function ScanFsTrivy(output = 'default') {
   let extension;
   switch (output) {
@@ -237,7 +236,6 @@ async function ScanSast(outputFormat) {
     console.log(`Init scan sast`);
     const result = await shell.exec(`semgrep scan --config auto --${outputFormat}`, { silent: false });
 }
-
 
 
 async function UpdateImageTag(pathFile,tag, helm, imageIndex = 0) {

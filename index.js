@@ -395,7 +395,7 @@ async function init() {
                 await ScanFsTrivy(argv.o);
                 break;
             case 'scan-sast':
-                await ScanFsTrivy(argv.o);
+                await ScanSast(argv.o);
                 break;                                
             case 'git-clone':
                 await CloneRepo(argv.t, argv.u, argv.b);

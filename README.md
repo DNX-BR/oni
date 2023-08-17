@@ -14,6 +14,8 @@ In this documentation, you will get to know the following:
     - [oni build-image](#oni-build-image)
     - [oni push-image](#oni-push-image)
     - [oni scan-image](#oni-scan-image)
+    - [oni scan-fs](#oni-scan-fs)
+    - [oni scan-sast](#oni-scan-sast)
     - [oni get-latest-image](#oni-get-latest-image)
   - [Examples](#examples)
   - [License](#license)
@@ -32,6 +34,8 @@ Commands:
   oni push-image            Command to push image to ECR
   oni lambda-deploy         Command to deploy Lambda
   oni scan-image            Scan image.tar generated in build-image step using trivy scan
+  oni scan-fs               Scan filesystem using trivy scan
+  oni scan-sast             Scan code using semgrep
   oni get-latest-image      Command for get latest image to ecr 
   oni init                  create oni.yaml sample
 
