@@ -262,7 +262,7 @@ Options:
 ```bash
 oni scan-sast
 
-Command to scan filesysetm using trivy scan
+Command to run sast in code using semgrep
 
 Options:
   -v, --version         Show version                       [bool]
