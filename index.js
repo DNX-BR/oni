@@ -64,7 +64,7 @@ async function init() {
                     })                                      
                     .option('channel-notification', {
                         alias: 'c',
-                        choices: ['slack', 'google', 'teams'],
+                        choices: ['slack', 'google', 'teams','ntfy'],
                         type: 'string',
                         required: false,
                         description: 'Notification channel for send message after deploy app',
@@ -98,7 +98,7 @@ async function init() {
                 })
                 .option('channel-notification', {
                     alias: 'c',
-                    choices: ['slack', 'google', 'teams'],
+                    choices: ['slack', 'google', 'teams','ntfy'],
                     type: 'string',
                     required: false,
                     description: 'Notification channel for send message after deploy app',
@@ -226,7 +226,7 @@ async function init() {
                 })
                 .option('channel-notification', {
                     alias: 'c',
-                    choices: ['slack', 'google', 'teams'],
+                    choices: ['slack', 'google', 'teams','ntfy'],
                     type: 'string',
                     required: false,
                     description: 'Notification channel for send message after deploy app',
