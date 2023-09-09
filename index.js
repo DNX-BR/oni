@@ -3,7 +3,7 @@ const fs = require('fs');
 const { BuildImageBuildKit, PushImageCrane } = require('./src/docker');
 const { CloneRepo, CommitPushChanges } = require('./src/git');
 const { DeployECS } = require('./src/ecs');
-const { initSample, ScanImageTrivy, UpdateImageTag, ScanFsTrivy, ScanSast } = require('./src/utils');
+const { initSample, ScanImageTrivy, UpdateImageTag, ScanFsTrivy, ScanSast,ScanNuclei } = require('./src/utils');
 const { DeployS3, InvalidateCloudFrontOnly } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
@@ -277,6 +277,23 @@ async function init() {
             .example('oni scan-sast')
             .strictOptions()
         }) 
+        .command('scan-nuclei', 'run scan nuclei', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('types', {
+                alias: 't',
+                type: 'string',
+                required: false,
+                default: 'http/',
+                description: 'Output format type',
+            }).      
+            option('url', {
+                alias: 'u',
+                type: 'string',
+                required: true,
+                description: 'Url for run scan',
+            })                  
+            .example('oni scan-nuclei -u localhost:8080 -t http/')
+            .strictOptions()
+        })         
         .command('update-image-tag-k8s', 'Update image tag in helm values or direct in deployment manifest', function (yargs, helpOrVersionSetgs) {
             return yargs.option('path-file', {
                 alias: 'p',
@@ -396,7 +413,10 @@ async function init() {
                 break;
             case 'scan-sast':
                 await ScanSast(argv.o);
-                break;                                
+                break;     
+            case 'scan-nuclei':
+                await ScanNuclei(argv.u,argv.t)
+                break;                                            
             case 'git-clone':
                 await CloneRepo(argv.t, argv.u, argv.b);
                 break;          

@@ -225,8 +225,8 @@ async function ScanFsTrivy(output = 'default') {
 
   if (output === 'default') {
     const result = await shell.exec(`trivy fs --scanners vuln,secret,config ./ --severity CRITICAL,HIGH`, { silent: false });
-  } {
-    const result = await shell.exec(`trivy fs --scanners vuln,secret,config --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} ./ --severity CRITICAL,HIGH`, { silent: false });
+  } else {
+    const result = await shell.exec(`trivy fs --scanners vuln,secret,config --format template "@/trivy/contrib/${output}.tpl"  -o report-trity.${extension} ./ --severity CRITICAL,HIGH`, { silent: false });
     console.log(`Generation file: report-trity.${extension}`);
   }
 
@@ -237,6 +237,10 @@ async function ScanSast(outputFormat) {
     const result = await shell.exec(`semgrep scan --config auto --${outputFormat}`, { silent: false });
 }
 
+async function ScanNuclei(url,type) {
+  console.log(`Init scan nuclei`);
+  const result = await shell.exec(`nuclei -u ${url} -t ${type}`, { silent: false });
+}
 
 async function UpdateImageTag(pathFile,tag, helm, imageIndex = 0) {
   try {    
@@ -264,5 +268,6 @@ module.exports = {
   ScanImageTrivy,
   ScanFsTrivy,
   UpdateImageTag,
-  ScanSast
+  ScanSast,
+  ScanNuclei
 }
