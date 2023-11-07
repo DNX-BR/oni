@@ -602,7 +602,7 @@ async function PrintEventsECS() {
             await GetLastEvent(events);
 
             lastIdMessage = events[0].id;
-        } {
+        } else {
 
             if (lastIdMessage != events[eventsSize].id)
                 console.log('\x1b[35m', `${events[eventsSize].createdAt} => ${events[eventsSize].message}`)
@@ -616,6 +616,37 @@ async function PrintEventsECS() {
         process.exit(1);
     }
 }
+
+async function PrintEventsECSV2() {
+    try {
+
+        const ecs = new aws.ECS({region: 'us-east-1'});
+
+        const service = await ecs.describeServices({ cluster: 'ecs-prod-apps-prod-us-east-1', services: ['frontend'] }).promise();
+        let events = service.$response.data.services;
+
+        let eventOrdered = events[0].events.sort((a,b)=>{
+            if (a.createdAt < b.createdAt) {
+                return -1;
+              } else if (a.createdAt > b.createdAt) {
+                return 1;
+              }
+        })
+
+        console.log(eventOrdered)
+
+    } catch (error) {
+        console.error('\x1b[31m', error);
+        process.exit(1);
+    }
+}
+
+async function init() {
+    await PrintEventsECSV2()
+}
+
+
+init()
 
 module.exports = {
     DeployECS, CodeDeploy, UpdateService
