@@ -528,7 +528,7 @@ async function CodeDeploy(taskARN, appName = 'APP_DEFAULT', appPort = 8080, cred
         let statusDeploy;
         let timeOut = 0;
         statusDeploy = await codeDeploy.getDeployment({ deploymentId: deploy.deploymentId }).promise();
-        while (statusDeploy.deploymentInfo.status === 'InProgress' || statusDeploy.deploymentInfo.status === 'Created') {
+        while (statusDeploy.deploymentInfo.status === 'InProgress' || statusDeploy.deploymentInfo.status === 'Created' || statusDeploy.deploymentInfo.status === 'Ready') {
             await sleep(5000);
             timeOut = timeOut + 5;
             await PrintEventsECS();
