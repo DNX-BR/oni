@@ -173,12 +173,17 @@ async function init() {
                 default: 'cache_build',
                 description: 'Directory for storage cache',
             }).option('assume-role', {
-                    alias: 'a',
-                    type: 'boolean',
-                    required: false,
-                    default: false,
-                    description: 'Assume role defined in oni.yaml ',
-             })                                          
+                alias: 'a',
+                type: 'boolean',
+                required: false,
+                default: false,
+                description: 'Assume role defined in oni.yaml ',
+             }).option('build-args', {
+                alias: 'e',
+                type: 'string',
+                required: false,
+                description: 'Define build args to Docker build',
+            })                                          
                 .example('oni build-image -d "." -t 0.0.1 -a APP_DEFAULT')
                 .strictOptions()
         })
@@ -397,7 +402,7 @@ async function init() {
                 await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d, argv.x)
                 break;
             case 'build-image':
-                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.p,argv.f,argv.c,argv.l,argv.a);
+                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.p,argv.f,argv.c,argv.l,argv.a,argv.e);
                 break;
             case 'push-image':
                 await PushImageCrane(argv.name, argv.tag, argv.a);
