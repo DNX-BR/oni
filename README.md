@@ -17,6 +17,9 @@ In this documentation, you will get to know the following:
     - [oni scan-fs](#oni-scan-fs)
     - [oni scan-sast](#oni-scan-sast)
     - [oni get-latest-image](#oni-get-latest-image)
+    - [oni update-image-tag-k8s](#oni-update-image-tag-k8s)
+    - [oni git-clone](#oni-git-clone)
+    - [oni git-commit](#oni-git-commit)
   - [Examples](#examples)
   - [License](#license)
 
@@ -209,6 +212,7 @@ Options:
   -p, --platform-build  Target plataform build                        [default: "linux/amd64"]
   -l, --location-cache  Directory for storage cache                   [string] [default: "cache_build"]
   -a, --assume-role     Assume role defined in oni.yaml               [bool] [default: false]
+  -b, --build-args      Define build args to Docker build             [string]
 
 Exemplos:
   oni build-image -d "." -t 0.0.1 -a APP_DEFAULT

@@ -13,7 +13,8 @@ async function BuildImageBuildKit(
                                 filename,
                                 enableCache,
                                 cacheLocation,
-                                assumeRole) {
+                                assumeRole,
+                                buildArgs) {
                                     
 
     let cache = '';
@@ -21,6 +22,14 @@ async function BuildImageBuildKit(
     if(enableCache)
         cache = `--export-cache type=local,dest=${cacheLocation} \
                 --import-cache type=local,src=${cacheLocation}`;
+                                  
+    let args = '';
+    
+    if (buildArgs.length > 0) {
+      for (const arg of buildArgs) {
+        args += `--opt build-arg:${arg} `;
+      }
+    }
 
     try {
         const env = yenv('oni.yaml', process.env.NODE_ENV)
@@ -43,6 +52,7 @@ async function BuildImageBuildKit(
         --local dockerfile=${dockerFile} \
         --opt filename=${filename} \
         --opt platform=${platformBuild}  \
+        ${args} \
         --output type=docker,name=${APP_IMAGE}:${tag} \
           ${cache} > image.tar`)
 
