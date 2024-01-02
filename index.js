@@ -179,7 +179,7 @@ async function init() {
                 default: false,
                 description: 'Assume role defined in oni.yaml ',
              }).option('build-args', {
-                alias: 'e',
+                alias: 'b',
                 type: 'string',
                 required: false,
                 description: 'Define build args to Docker build',
@@ -402,7 +402,7 @@ async function init() {
                 await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d, argv.x)
                 break;
             case 'build-image':
-                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.p,argv.f,argv.c,argv.l,argv.a,argv.e);
+                await BuildImageBuildKit(argv.tag, argv.dockerfile, argv.name, argv.p,argv.f,argv.c,argv.l,argv.a,argv.b);
                 break;
             case 'push-image':
                 await PushImageCrane(argv.name, argv.tag, argv.a);
