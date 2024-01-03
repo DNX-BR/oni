@@ -24,14 +24,15 @@ async function BuildImageBuildKit(
                 --import-cache type=local,src=${cacheLocation}`;
                                   
     let args = '';
-    
-    if (buildArgs.length > 0) {
-      if (typeof buildArgs === 'string') {
-        // If buildArgs is a string, split it into a list based on a delimiter (e.g., comma)
-        buildArgs = buildArgs.split(',');
-      }
-      for (const arg of buildArgs) {
-        args += `--opt build-arg:${arg} `;
+    if (buildArgs) {
+      if (buildArgs.length > 0) {
+        if (typeof buildArgs === 'string') {
+          // If buildArgs is a string, split it into a list based on a delimiter (e.g., comma)
+          buildArgs = buildArgs.split(',');
+        }
+        for (const arg of buildArgs) {
+          args += `--opt build-arg:${arg} `;
+        }
       }
     }
 
