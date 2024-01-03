@@ -617,36 +617,29 @@ async function PrintEventsECS() {
     }
 }
 
-async function PrintEventsECSV2() {
-    try {
+// async function PrintEventsECSV2() {
+//     try {
 
-        const ecs = new aws.ECS({region: 'us-east-1'});
+//         const ecs = new aws.ECS({region: 'us-east-1'});
 
-        const service = await ecs.describeServices({ cluster: 'ecs-prod-apps-prod-us-east-1', services: ['frontend'] }).promise();
-        let events = service.$response.data.services;
+//         const service = await ecs.describeServices({ cluster: 'ecs-prod-apps-prod-us-east-1', services: ['frontend'] }).promise();
+//         let events = service.$response.data.services;
 
-        let eventOrdered = events[0].events.sort((a,b)=>{
-            if (a.createdAt < b.createdAt) {
-                return -1;
-              } else if (a.createdAt > b.createdAt) {
-                return 1;
-              }
-        })
+//         let eventOrdered = events[0].events.sort((a,b)=>{
+//             if (a.createdAt < b.createdAt) {
+//                 return -1;
+//               } else if (a.createdAt > b.createdAt) {
+//                 return 1;
+//               }
+//         })
 
-        console.log(eventOrdered)
+//         console.log(eventOrdered)
 
-    } catch (error) {
-        console.error('\x1b[31m', error);
-        process.exit(1);
-    }
-}
-
-async function init() {
-    await PrintEventsECSV2()
-}
-
-
-init()
+//     } catch (error) {
+//         console.error('\x1b[31m', error);
+//         process.exit(1);
+//     }
+// }
 
 module.exports = {
     DeployECS, CodeDeploy, UpdateService
