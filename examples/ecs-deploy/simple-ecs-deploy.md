@@ -33,6 +33,7 @@ development:
     WEBHOOK_SLACK: slack_webhook_endpoint                        # Webhook if notification is enable
     APP_IMAGE: 'YOUR_APPLICATION_IMAGE_AWS_LINK'                 # Container image without tag. Used for build and push
     APP_NAME: YOUR_APP_NAME                                      # Application name (ECS service)
+    APP_CPU: 0                                                   # Container cpu
     APP_MEMORY: 512                                              # Container memory
     APP_MEMORY_RESERVATION: 512                                  # Container memory reservation
     APP_PORTS:                                                   # Container ports to expose
@@ -64,6 +65,7 @@ development:
     APP_NAME: YOUR_APP_NAME_1                                    # Application name (ECS service)
     APP_MEMORY: 512                                              # Container memory
     APP_MEMORY_RESERVATION: 512                                  # Container memory reservation
+    APP_CPU: 0                                                   # Container cpu
     APP_PORTS:                                                   # Container ports to expose
       - 80
     APP_REGION: us-east-1                                        # App Region for deploy
