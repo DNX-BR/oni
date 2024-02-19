@@ -84,7 +84,7 @@ async function UploadS3(app, assumeRole, disableACL) {
         await syncClient.sync(APP_SRC, APP_S3_BUCKET, {
             dryRun: false,
             filters: FILTERS,
-            del: true, commandInput: commandInputConfig
+            del: false, commandInput: commandInputConfig
         });
     } catch (error) {
         console.error(error)
