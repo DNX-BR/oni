@@ -103,6 +103,13 @@ async function init() {
                     required: false,
                     description: 'Notification channel for send message after deploy app',
                 })
+                .option('keep-folder', {
+                    alias: 'k',
+                    type: 'boolean',
+                    required: false,
+                    default: false,
+                    description: 'Keep folder on S3 after sync',
+                })
                 .example('oni deploy-static -n MY_APP')
                 .strictOptions()
         })
@@ -396,7 +403,7 @@ async function init() {
     if (await fs.existsSync('./oni.yaml') || command[0] === 'init' || command[0] === 'git-clone' || command[0] === 'git-commit' || command[0] === 'update-image-tag-k8s') {
         switch (command[0]) {
             case 'deploy-static':
-                await DeployS3(argv.name, argv.c, argv.a,argv.d);
+                await DeployS3(argv.name, argv.c, argv.a,argv.d, argv.k);
                 break;
             case 'ecs-deploy':
                 await DeployECS(argv.name, argv.tag, argv.w, argv.f, argv.c, argv.a,argv.d, argv.x)

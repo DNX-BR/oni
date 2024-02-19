@@ -36,7 +36,7 @@ async function initEnvs(app, assumeRole) {
     AUTH_TYPE = 'INFRA';
 }
 
-async function UploadS3(app, assumeRole, disableACL) {
+async function UploadS3(app, assumeRole, disableACL, keepFolder) {
     let cred;
     let confCredential;
     if (assumeRole) {
@@ -84,7 +84,7 @@ async function UploadS3(app, assumeRole, disableACL) {
         await syncClient.sync(APP_SRC, APP_S3_BUCKET, {
             dryRun: false,
             filters: FILTERS,
-            del: false, commandInput: commandInputConfig
+            del: keepFolder, commandInput: commandInputConfig
         });
     } catch (error) {
         console.error(error)
