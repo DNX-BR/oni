@@ -176,6 +176,7 @@ Options:
   -n, --name                  Application name defined in oni.yaml    [string] [mandatory] [default: "APP_DEFAULT"]
   -a, --assume-role           Assume role defined in oni.yaml         [bool] [default: false]
   -c, --channel-notification  Notification channel to send message after deploy app  [string] [options: "slack", "google", "teams"]
+  -k, --keep-folder           Keep folder on S3 after sync            [bool] [default: false]
 ```
 
 ### oni lambda-deploy
