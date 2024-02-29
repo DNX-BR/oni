@@ -392,6 +392,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         
 
         const ecs = new aws.ECS();
+
         const task = await ecs.registerTaskDefinition({
             containerDefinitions: containerDefinitions,
             family: `${CLUSTER_NAME}-${APP_NAME}`,
@@ -404,6 +405,9 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             taskRoleArn: TASK_ARN ? TASK_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
             requiresCompatibilities: isFargate ? ['FARGATE'] : []
         }).promise();
+
+        console.log(task.taskDefinition)
+        
 
         const taskARN = task.taskDefinition.taskDefinitionArn;
         console.log('\x1b[36mTask Defnition: ', taskARN);

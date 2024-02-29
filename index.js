@@ -390,7 +390,7 @@ async function init() {
 
         )        
         .command('init', 'create oni.yaml sample')
-        .version('version', 'Show Version', `Version ${process.env.APP_VERSION}`)
+        .version('version', 'Show Version', `Version ${process.env.APP_VERSION || '3.1.2'}`)
         .alias('version', 'v')
         .demandCommand(1, 'You need at least one command')
         .help()

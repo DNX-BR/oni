@@ -42,19 +42,24 @@ async function GetLatestImage(app, assumeRole) {
             repositoryName: REPOSITORY_NAME
         }).promise();
 
-       images.imageDetails.sort((a,b) =>{
-            const dataA = a.imagePushedAt;
-            const dataB = b.imagePushedAt;
-            if (dataA > dataB) {
-                return -1;
-              }
-              if (dataA < dataB) {
-                return 1;
-              }            
-              return 0;            
-        });
+        listImagesTags = images.imageDetails;
 
-        console.log(images.imageDetails[0].imageTags[0])
+        let nextToken = images.nextToken;
+
+        while (nextToken !== undefined) {
+            const nextImages = await ecr.describeImages({
+                registryId: ECR_AWS_ACCOUNT,
+                repositoryName: REPOSITORY_NAME,
+                nextToken: nextToken
+            }).promise();
+
+            nextToken = nextImages.nextToken;
+            listImagesTags = listImagesTags.concat(nextImages.imageDetails)
+        }
+
+        listImagesTags.sort((a, b) => b.imagePushedAt - a.imagePushedAt);
+
+        console.log(listImagesTags[0].imageTags[0])
 
     } catch (error) {
         console.error('\x1b[31m', error);
