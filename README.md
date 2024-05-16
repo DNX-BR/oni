@@ -17,6 +17,7 @@ In this documentation, you will get to know the following:
     - [oni scan-fs](#oni-scan-fs)
     - [oni scan-sast](#oni-scan-sast)
     - [oni get-latest-image](#oni-get-latest-image)
+    - [oni create-env-from-secrets](#oni-create-env-from-secrets)
     - [oni update-image-tag-k8s](#oni-update-image-tag-k8s)
     - [oni git-clone](#oni-git-clone)
     - [oni git-commit](#oni-git-commit)
@@ -31,16 +32,17 @@ The basic usage for the Oni tool is the following:
 Usage: oni <command>  [options]
 
 Commands:
-  oni ecs-deploy [options]  Command to deploy in ECS
-  oni deploy-static         Command to deploy static content in S3
-  oni build-image           Command to build with buildkit
-  oni push-image            Command to push image to ECR
-  oni lambda-deploy         Command to deploy Lambda
-  oni scan-image            Scan image.tar generated in build-image step using trivy scan
-  oni scan-fs               Scan filesystem using trivy scan
-  oni scan-sast             Scan code using semgrep
-  oni get-latest-image      Command for get latest image to ecr 
-  oni init                  create oni.yaml sample
+  oni ecs-deploy [options]    Command to deploy in ECS
+  oni deploy-static           Command to deploy static content in S3
+  oni build-image             Command to build with buildkit
+  oni push-image              Command to push image to ECR
+  oni lambda-deploy           Command to deploy Lambda
+  oni scan-image              Scan image.tar generated in build-image step using trivy scan
+  oni scan-fs                 Scan filesystem using trivy scan
+  oni scan-sast               Scan code using semgrep
+  oni get-latest-image        Command for get latest image to ecr 
+  oni create-env-from-secrets Command to create env file from SecretsManager parameter
+  oni init                    create oni.yaml sample
 
 options:
   -v, --version  Show Version                                         [bool]
@@ -75,6 +77,7 @@ development:                              # Oni Workspace defined by variable NO
     APP_PORTS:                            # Container ports to expose
       - 8080    
     APP_SECRET_EXTRACT: secret-arn        # Extract all secrets key from secret manager and set in task definition
+    APP_SECRET_EXTRACT_ENV_FILE:          # Extract all secrets from secret manager and save into an env file
     APP_VARIABLES:                        # Container variables
       - KEY: VALUE    
     APP_SECRETS:                          # Container secret parameter from ssm or secrets manager
@@ -288,6 +291,22 @@ Options:
       --help                  Show help                               [bool]
   -n, --name                  Application name defined in oni.yaml    [string] [mandatory] [default: "APP_DEFAULT"]
   -a, --assume-role           Assume role defined in oni.yaml         [bool] [default: false]
+```
+
+### oni create-env-from-secrets
+
+```bash
+oni create-env-from-secrets [options]
+
+Command to create env file from SecretsManager parameter
+
+Options:
+  -v, --version               Show version                                        [bool]
+      --help                  Show help                                           [bool]
+  -n, --name                  Application name defined in oni.yaml                [string] [mandatory] [default: "APP_DEFAULT"]
+  -p, --path-file             Path to file where the variables will be stored     [string] [mandatory] [default: ".env"]
+  -a, --assume-role           Assume role defined in oni.yaml                     [bool] [default: false]
+  -a, --format                Whether to format secrets from JSON to the env file or just extract them as plain text     [bool] [default: false]
 ```
 
 ### oni update-image-tag-k8s
