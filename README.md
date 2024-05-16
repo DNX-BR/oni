@@ -76,8 +76,8 @@ development:                              # Oni Workspace defined by variable NO
     APP_MEMORY_RESERVATION: 512           # Container memory reservation
     APP_PORTS:                            # Container ports to expose
       - 8080    
-    APP_SECRET_EXTRACT: secret-arn        # Extract all secrets key from secret manager and set in task definition
-    APP_SECRET_EXTRACT_ENV_FILE:          # Extract all secrets from secret manager and save into an env file
+    APP_SECRET_EXTRACT: secret-arn            # Extract all secrets key from secret manager and set in task definition
+    APP_SECRET_EXTRACT_ENV_FILE: secret-arn   # Extract all secrets key from secret manager and save it to an env file
     APP_VARIABLES:                        # Container variables
       - KEY: VALUE    
     APP_SECRETS:                          # Container secret parameter from ssm or secrets manager
@@ -306,7 +306,7 @@ Options:
   -n, --name                  Application name defined in oni.yaml                [string] [mandatory] [default: "APP_DEFAULT"]
   -p, --path-file             Path to file where the variables will be stored     [string] [mandatory] [default: ".env"]
   -a, --assume-role           Assume role defined in oni.yaml                     [bool] [default: false]
-  -a, --format                Whether to format secrets from JSON to the env file or just extract them as plain text     [bool] [default: false]
+  -f, --format                Whether to format secrets from JSON to the env file or just extract them as plain text     [bool] [default: false]
 ```
 
 ### oni update-image-tag-k8s
