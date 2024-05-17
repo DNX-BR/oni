@@ -16,8 +16,7 @@ RUN apt-get update ; \
     curl \
     git \
     python3-pip \
-    unzip \
-    jq
+    unzip 
 
 WORKDIR /root
 
@@ -38,7 +37,7 @@ RUN mkdir -p /trivy && cd /trivy && \
 
 RUN wget https://github.com/mikefarah/yq/releases/download/v4.23.1/yq_linux_amd64 && mv yq_linux_amd64 /usr/bin/yq && chmod +x /usr/bin/yq
 
-RUN pip3 install --break-system-packages semgrep awscli
+RUN pip3 install --break-system-packages semgrep
 
 RUN wget https://github.com/projectdiscovery/nuclei/releases/download/v2.9.14/nuclei_2.9.14_linux_amd64.zip && unzip nuclei_2.9.14_linux_amd64.zip && mv nuclei /usr/bin/ && rm -f nuclei_2.9.14_linux_amd64.zip
 

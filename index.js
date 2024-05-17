@@ -8,6 +8,7 @@ const { DeployS3, InvalidateCloudFrontOnly } = require('./src/s3');
 const { UpdateLambda } = require('./src/serverless');
 const { util } = require('s3-sync-client');
 const { GetLatestImage } = require('./src/ecr');
+const { CreateEnvFromSecrets } = require('./src/secretmanager');
 
 async function init() {
 
@@ -388,7 +389,39 @@ async function init() {
                     .strictOptions()
             }
 
-        )        
+        )
+        .command('create-env-from-secrets', 'retrieve values stored in SecretsManager and save them to a specified file', function (yargs, helpOrVersionSetgs) {
+            return yargs.option('name', {
+                alias: 'n',
+                type: 'string',
+                required: true,
+                description: 'Application name defined in oni.yml',
+                default: 'APP_DEFAULT'
+            })
+            .option('path-file', {
+                alias: 'p',
+                type: 'string',
+                required: true,
+                description: 'Path to file where the variables will be stored',
+                default: '.env'
+            })
+            .option('assume-role', {
+                alias: 'a',
+                type: 'boolean',
+                required: false,
+                default: false,
+                description: 'Assume role defined in oni.yaml',
+            })
+            .option('format', {
+                alias: 'f',
+                type: 'boolean',
+                required: false,
+                default: false,
+                description: 'Whether to format secrets from JSON to the env file or just extract them as plain text',
+            })
+            .example('oni create-env-from-secrets -n APP_DEFAULT -p .env -a -f')
+            .strictOptions()
+        })        
         .command('init', 'create oni.yaml sample')
         .version('version', 'Show Version', `Version ${process.env.APP_VERSION || '3.1.2'}`)
         .alias('version', 'v')
@@ -440,7 +473,10 @@ async function init() {
                 break;       
             case 'get-latest-image':
                 await GetLatestImage(argv.name, argv.a);
-                break;       
+                break;
+            case 'create-env-from-secrets':
+                await CreateEnvFromSecrets(argv.name, argv.p, argv.a, argv.f);
+                break;    
             case 'invalidate-cloudfront':
                 await InvalidateCloudFrontOnly(argv.name, argv.a);
                 break;                     
