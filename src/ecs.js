@@ -33,6 +33,8 @@ let APP_HOOKS;
 let EXTRA_CONTAINERS;
 let APP_LINKS;
 let APP_STOP_TIMEOUT;
+let APP_TAGS = null;
+let TMP_APP_TAGS;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
@@ -76,7 +78,8 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     EXTRA_CONTAINERS = APP.EXTRA_CONTAINERS || [];
     APP_LINKS = APP.APP_LINKS;
     APP_STOP_TIMEOUT = APP.APP_STOP_TIMEOUT || 30;
-
+    TMP_APP_TAGS = APP.APP_TAGS;
+    
 }
 
 async function GetLogFailedContainerDeploy(task) {
@@ -341,6 +344,14 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
                 APP_ULIMITS.push({ hardLimit: u.SOFTLIMIT, softLimit: u.HARDLIMIT, name: u.NAME });
             }
 
+        if (TMP_APP_TAGS)
+            APP_TAGS = Object.keys(TMP_APP_TAGS).map(key => {
+                return {
+                    key: key,
+                    value: TMP_APP_TAGS[key]
+                };
+            });
+
         let containerDefinitions = []
 
         let containerDefinition = {
@@ -403,7 +414,8 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             memory: isFargate ? APP_MEMORY : null,
             cpu: isFargate ? APP_CPU : null,
             taskRoleArn: TASK_ARN ? TASK_ARN : `arn:aws:iam::${APP_ACCOUNT}:role/ecs-task-${CLUSTER_NAME}-${APP_REGION}`,
-            requiresCompatibilities: isFargate ? ['FARGATE'] : []
+            requiresCompatibilities: isFargate ? ['FARGATE'] : [],
+            ...(APP_TAGS && {tags: APP_TAGS})
         }).promise();
 
         console.log(task.taskDefinition)

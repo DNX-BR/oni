@@ -67,6 +67,7 @@ development:                              # Oni Workspace defined by variable NO
     APP_REGION: us-east-1                 # App Region for deploy
     APP_ACCOUNT: '111111111111'           # App account for deploy
     APP_ROLE: your-deploy-role            # Role used for deploy if parameter "assume-role" is set
+    APP_SECRET_EXTRACT_ENV_FILE: secret-arn   # Extract all secrets key from secret manager and save it to an env file
 
     # Configuration for ecs-deploy        #############################################################
     APP_IMAGE: your-app-image-aws-link    # Container image without tag. Used for build and push
@@ -77,7 +78,6 @@ development:                              # Oni Workspace defined by variable NO
     APP_PORTS:                            # Container ports to expose
       - 8080    
     APP_SECRET_EXTRACT: secret-arn            # Extract all secrets key from secret manager and set in task definition
-    APP_SECRET_EXTRACT_ENV_FILE: secret-arn   # Extract all secrets key from secret manager and save it to an env file
     APP_VARIABLES:                        # Container variables
       - KEY: VALUE    
     APP_SECRETS:                          # Container secret parameter from ssm or secrets manager
@@ -120,6 +120,8 @@ development:                              # Oni Workspace defined by variable NO
       - AfterAllowTestTraffic: "AfterAllowTestTrafficHookFunctionName"
       - BeforeAllowTraffic: "BeforeAllowTrafficHookFunctionName"
       - AfterAllowTraffic: "AfterAllowTrafficHookFunctionName"
+    APP_TAGS:        # Tags to add to task definition
+      SERVICE: API
 
     # Configuration for static-deploy     #############################################################
     APP_SRC: /path/to/content             # Source code
