@@ -35,6 +35,7 @@ let APP_LINKS;
 let APP_STOP_TIMEOUT;
 let APP_TAGS = null;
 let TMP_APP_TAGS;
+let REPOSITORY_CREDENTIALS;
 
 async function sleep(ms) {
     return new Promise((resolve) => {
@@ -79,6 +80,7 @@ async function initEnvs(app, assumeRole, channelNotification, withoutLoadBalance
     APP_LINKS = APP.APP_LINKS;
     APP_STOP_TIMEOUT = APP.APP_STOP_TIMEOUT || 30;
     TMP_APP_TAGS = APP.APP_TAGS;
+    REPOSITORY_CREDENTIALS = APP.REPOSITORY_CREDENTIALS;
     
 }
 
@@ -282,6 +284,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         if (APP_SECRET_EXTRACT)
             APP_SECRETS = APP_SECRETS.concat(await GetSecrets(APP_SECRET_EXTRACT, APP_REGION, assumeRole,app));
 
+
         aws.config.update(confCredential)
 
         for (var idx in TPM_SECRETS) {
@@ -360,6 +363,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             ...(!isFargate && { memoryReservation: APP_MEMORY_RESERVATION }),
             ...(!isFargate && { memory: APP_MEMORY }),
             ...((APP_CPU > 0 && !isFargate) && { cpu: APP_CPU }),
+            ...(REPOSITORY_CREDENTIALS && {repositoryCredentials: {credentialsParameter: REPOSITORY_CREDENTIALS} }),
             name: APP_NAME,
             command: APP_CMDS,
             environment: APP_VARIABLES,

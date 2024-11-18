@@ -32,7 +32,7 @@ async function GetSecrets(secretName, region, assumeRole,app) {
     const secretValuesJson = JSON.parse(secretValuesText.SecretString);
 
     for (var attributename in secretValuesJson) {
-        secretList.push({ name: attributename, valueFrom: `${secretName}:${attributename}::` });
+        secretList.push({ name: attributename, valueFrom: `${secretValuesText.ARN}:${attributename}::` });
     }
 
     return secretList;

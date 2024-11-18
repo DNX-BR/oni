@@ -39,7 +39,7 @@ RUN wget https://github.com/mikefarah/yq/releases/download/v4.23.1/yq_linux_amd6
 
 RUN pip3 install --break-system-packages semgrep
 
-RUN wget https://github.com/projectdiscovery/nuclei/releases/download/v2.9.14/nuclei_2.9.14_linux_amd64.zip && unzip nuclei_2.9.14_linux_amd64.zip && mv nuclei /usr/bin/ && rm -f nuclei_2.9.14_linux_amd64.zip
+#RUN wget https://github.com/projectdiscovery/nuclei/releases/download/v2.9.14/nuclei_2.9.14_linux_amd64.zip && unzip nuclei_2.9.14_linux_amd64.zip && mv nuclei /usr/bin/ && rm -f nuclei_2.9.14_linux_amd64.zip
 
 FROM base_debian
 
