@@ -61,7 +61,7 @@ async function BuildImageBuildKit(
         --opt filename=${filename} \
         --opt platform=${platformBuild}  \
         ${args} \
-        --output type=docker,name=\"${tagList}\" \
+        --output type=docker,\"name=${tagList}\" \
           ${cache} > image.tar`)
 
         if (result.code != 0)
