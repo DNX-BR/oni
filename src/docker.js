@@ -6,7 +6,7 @@ const AUTH_TYPE = 'CI';
 
 //windows/amd64,linux/amd64,linux/arm64
 async function BuildImageBuildKit(
-                                tags,
+                                tag,
                                 dockerFile,
                                 app,
                                 platformBuild = 'linux/amd64',
@@ -46,9 +46,7 @@ async function BuildImageBuildKit(
         const authEcr = await DockerLoginECR(assumeRole,APP_REGION,app);
 
         const resultLogin = await shell.exec(`crane auth login ${APP_IMAGE.split('/')[0]} -u AWS -p ${authEcr.password}`,{ silent: true });
-        
-        const tagList = tags.map(tag => `${APP_IMAGE}:${tag}`).join(',');
-
+    
         if (resultLogin.code != 0)
             process.exit(1);        
 
@@ -61,7 +59,7 @@ async function BuildImageBuildKit(
         --opt filename=${filename} \
         --opt platform=${platformBuild}  \
         ${args} \
-        --output type=docker,\"name=${tagList}\" \
+        --output type=docker,name=${APP_IMAGE}:${tag} \
           ${cache} > image.tar`)
 
         if (result.code != 0)
@@ -73,7 +71,7 @@ async function BuildImageBuildKit(
     }
 }
 
-async function PushImageCrane(app, tags, assumeRole) {
+async function PushImageCrane(app, tag, assumeRole) {
     const env = yenv('oni.yaml', process.env.NODE_ENV)
     const APP = env[app];
     const APP_IMAGE = APP.APP_IMAGE;
@@ -82,13 +80,10 @@ async function PushImageCrane(app, tags, assumeRole) {
     const authEcr = await DockerLoginECR(assumeRole,APP_REGION,app);
 
     await shell.exec(`crane auth login ${APP_IMAGE.split('/')[0]} -u AWS -p ${authEcr.password}`,{ silent: true });
-    
-    for (const tag of tags) {
-        const result = await shell.exec(`crane push image.tar ${APP_IMAGE}:${tag}`);
-        
-        if (result.code != 0)
-            process.exit(1);
-    }
+    const result = await shell.exec(`crane push image.tar ${APP_IMAGE}:${tag}`);
+
+    if (result.code != 0)
+        process.exit(1);
 }
 
 async function LoginEcr(app) {

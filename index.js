@@ -144,7 +144,7 @@ async function init() {
                 default: '.'
             }).option('tag', {
                 alias: 't',
-                type: 'array',
+                type: 'string',
                 required: true,
                 description: 'Image tag',
             }).option('name', {
@@ -192,13 +192,13 @@ async function init() {
                 required: false,
                 description: 'Define build args to Docker build',
             })                                          
-                .example('oni build-image -d "." -t 0.0.1 -t latest -a APP_DEFAULT')
+                .example('oni build-image -d "." -t 0.0.1 -a APP_DEFAULT')
                 .strictOptions()
         })
         .command('push-image', 'command for push image to ecr', function (yargs, helpOrVersionSetgs) {
             return yargs.option('tag', {
                 alias: 't',
-                type: 'array',
+                type: 'string',
                 required: true,
                 description: 'Image tag',
             }).option('name', {
@@ -213,7 +213,7 @@ async function init() {
                     default: false,
                     description: 'Assume role defined in oni.yaml ',
              })
-                .example('oni push-image -a APP_DEFAULT -t v1 -t latest')
+                .example('oni push-image -a APP_DEFAULT -t v1')
                 .strictOptions()
         })
         .command('lambda-deploy', 'command for deploy lambda', function (yargs, helpOrVersionSetgs) {
