@@ -3,7 +3,7 @@ const aws = require('aws-sdk');
 const { AssumeRole } = require('./auth');
 const notifications = require('./notifications');
 const util = require('./utils');
-const { GetSecrets } = require('./secretmanager');
+const { GetSecrets,GetSecretARN } = require('./secretmanager');
 
 let APP;
 let APP_IMAGE;
@@ -291,7 +291,12 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             var item = TPM_SECRETS[idx];
             for (var key in item) {
                 var value = item[key];
-                APP_SECRETS.push({ name: key, valueFrom: value }) // Now on the value need inform the complete arn of secrets manager or ssm
+                if (value.includes('arn:aws:secretsmanager')) {
+                    APP_SECRETS.push({ name: key, valueFrom: value })
+                } else {
+                    valueArn = await GetSecretARN(value.split(":")[0], APP_REGION, assumeRole);
+                    APP_SECRETS.push({ name: key, valueFrom: `${valueArn}:${value.split(":")[1]}::` }) // Now on the value need inform the complete arn of secrets manager or ssm
+                }
             }
         }
 
@@ -403,9 +408,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
 
 
         console.log('ContainerDefinition: ', containerDefinitions);
-
         
-
         const ecs = new aws.ECS();
 
         const task = await ecs.registerTaskDefinition({
