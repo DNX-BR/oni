@@ -204,7 +204,7 @@ async function ExtraContainers(extraContainers,tag) {
     for (const extra of extraContainers) {
         const containerDefinition = {
             name: extra.APP_NAME,
-            image: `${extra.APP_IMAGE}:${tag}`,
+            image: extra.USE_STATIC_IMAGE ? extra.APP_IMAGE : `${extra.APP_IMAGE}:${tag}`,
             ...(!extra.IS_FARGATE && {memoryReservation: extra.APP_MEMORY_RESERVATION} ),
             ...(!extra.IS_FARGATE && { memory: extra.APP_MEMORY} ),
             ...(!extra.IS_FARGATE && { cpu: extra.APP_CPU} ),
@@ -230,7 +230,7 @@ async function ExtraContainers(extraContainers,tag) {
             logConfiguration: {
                 logDriver: "awslogs",
                 options: {
-                    "awslogs-group": `/ecs/${CLUSTER_NAME}/${extra.APP_NAME}`, //CUSTOMIZADO
+                    "awslogs-group": `/ecs/${CLUSTER_NAME}/${APP_NAME}`, //CUSTOMIZADO
                     "awslogs-region": `${APP_REGION}`,
                     "awslogs-stream-prefix": `${extra.APP_NAME}`
                 }
