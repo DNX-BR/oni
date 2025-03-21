@@ -6,21 +6,21 @@ const yenv = require('yenv')
 
 async function GetSecretARN(secret_name,region,assumeRole,app) {
 
-    let confCredential = {
-        apiVersion: '2017-10-17',
-        region: region
-    };
+    // let confCredential = {
+    //     apiVersion: '2017-10-17',
+    //     region: region
+    // };
 
     
 
-    if (assumeRole) {
-        cred = await AssumeRole(AUTH_TYPE, app);
-        confCredential.accessKeyId = cred.accessKeyId;
-        confCredential.secretAccessKey = cred.secretAccessKey;
-        confCredential.sessionToken = cred.sessionToken;
-    }
+    // if (assumeRole) {
+    //     cred = await AssumeRole(AUTH_TYPE, app);
+    //     confCredential.accessKeyId = cred.accessKeyId;
+    //     confCredential.secretAccessKey = cred.secretAccessKey;
+    //     confCredential.sessionToken = cred.sessionToken;
+    // }
 
-    aws.config.update(confCredential)
+    // aws.config.update(confCredential)
 
 
     const secretsManager = new aws.SecretsManager();
