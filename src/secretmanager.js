@@ -4,7 +4,7 @@ const AUTH_TYPE = 'INFRA';
 const { AssumeRole } = require('./auth');
 const yenv = require('yenv')
 
-async function GetSecretARN(secret_name,region,assumeRole) {
+async function GetSecretARN(secret_name,region,assumeRole,app) {
 
     let confCredential = {
         apiVersion: '2017-10-17',
@@ -30,7 +30,7 @@ async function GetSecretARN(secret_name,region,assumeRole) {
 
 }
 
-async function GetSecrets(secretName, region, assumeRole,app) {
+async function GetSecrets(secretName, region, assumeRole, app) {
 
     let confCredential = {
         apiVersion: '2017-10-17',

@@ -282,7 +282,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
 
 
         if (APP_SECRET_EXTRACT)
-            APP_SECRETS = APP_SECRETS.concat(await GetSecrets(APP_SECRET_EXTRACT, APP_REGION, assumeRole,app));
+            APP_SECRETS = APP_SECRETS.concat(await GetSecrets(APP_SECRET_EXTRACT, APP_REGION, assumeRole, app));
 
 
         aws.config.update(confCredential)
@@ -294,7 +294,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
                 if (value.includes('arn:aws:secretsmanager')) {
                     APP_SECRETS.push({ name: key, valueFrom: value })
                 } else {
-                    valueArn = await GetSecretARN(value.split(":")[0], APP_REGION, assumeRole);
+                    valueArn = await GetSecretARN(value.split(":")[0], APP_REGION, assumeRole, app);
                     APP_SECRETS.push({ name: key, valueFrom: `${valueArn}:${value.split(":")[1]}::` }) // Now on the value need inform the complete arn of secrets manager or ssm
                 }
             }
