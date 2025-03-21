@@ -4,14 +4,16 @@ const AUTH_TYPE = 'INFRA';
 const { AssumeRole } = require('./auth');
 const yenv = require('yenv')
 
-async function GetSecretARN(secret_name,region,assumeRole,app) {
+async function GetSecretARN(secret_name,region,assumeRole,app, confCredentialOriginal) {
 
-    // let confCredential = {
-    //     apiVersion: '2017-10-17',
-    //     region: region
-    // };
+    let confCredential = {
+        apiVersion: '2017-10-17',
+        region: region
+    };
 
-    
+    confCredential.accessKeyId = confCredentialOriginal.accessKeyId;
+    confCredential.secretAccessKey = confCredentialOriginal.secretAccessKey;
+    confCredential.sessionToken = confCredentialOriginal.sessionToken;
 
     // if (assumeRole) {
     //     cred = await AssumeRole(AUTH_TYPE, app);
@@ -20,7 +22,7 @@ async function GetSecretARN(secret_name,region,assumeRole,app) {
     //     confCredential.sessionToken = cred.sessionToken;
     // }
 
-    // aws.config.update(confCredential)
+    aws.config.update(confCredential)
 
 
     const secretsManager = new aws.SecretsManager();

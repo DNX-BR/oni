@@ -291,10 +291,10 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
             var item = TPM_SECRETS[idx];
             for (var key in item) {
                 var value = item[key];
-                if (value.includes('arn:aws:secretsmanager')) {
+                if (value.includes('arn:aws:secretsmanager') || value.includes('arn:aws:ssm')) {
                     APP_SECRETS.push({ name: key, valueFrom: value })
                 } else {
-                    valueArn = await GetSecretARN(value.split(":")[0], APP_REGION, assumeRole, app);
+                    valueArn = await GetSecretARN(value.split(":")[0], APP_REGION, assumeRole, app, confCredential);
                     APP_SECRETS.push({ name: key, valueFrom: `${valueArn}:${value.split(":")[1]}::` }) // Now on the value need inform the complete arn of secrets manager or ssm
                 }
             }
@@ -402,7 +402,7 @@ async function DeployECS(app, tag, withoutLoadBalance, isFargate, channelNotific
         }
 
         if (EXTRA_CONTAINERS.length > 0) {
-            const extraContainersDefintion = await ExtraContainers(EXTRA_CONTAINERS,tag)
+            const extraContainersDefintion = await ExtraContainers(EXTRA_CONTAINERS, tag)
             containerDefinitions = containerDefinitions.concat(extraContainersDefintion)
         }
 
