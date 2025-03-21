@@ -1,4 +1,4 @@
-FROM node:alpine AS base
+FROM node:23.8-alpine3.20 AS base
 
 WORKDIR /usr/src/app
 
@@ -7,7 +7,7 @@ RUN npm install; \
     npm install -g pkg; \
     pkg .
 
-FROM debian:latest as base_debian
+FROM debian:12.10 as base_debian
 ENV APP_VERSION 3.0.0
 RUN apt-get update ; \
     apt-get install -y \
