@@ -41,12 +41,12 @@ async function GetSecrets(secretName, region, assumeRole, app) {
 
     let secretList = [];
 
-    if (assumeRole) {
-        cred = await AssumeRole(AUTH_TYPE, app);
-        confCredential.accessKeyId = cred.accessKeyId;
-        confCredential.secretAccessKey = cred.secretAccessKey;
-        confCredential.sessionToken = cred.sessionToken;
-    }
+    // if (assumeRole) {
+    //     cred = await AssumeRole(AUTH_TYPE, app);
+    //     confCredential.accessKeyId = cred.accessKeyId;
+    //     confCredential.secretAccessKey = cred.secretAccessKey;
+    //     confCredential.sessionToken = cred.sessionToken;
+    // }
 
 
     aws.config.update(confCredential)
