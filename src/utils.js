@@ -195,9 +195,9 @@ async function ScanImageTrivy(output = 'default',image = "none") {
   }
 
   if (output === 'default') {
-    const result = await shell.exec(`trivy --quiet image ${image === "none" || image === undefined ? '--input image.tar': `${image}` } --severity CRITICAL,HIGH`, { silent: false });
+    const result = await shell.exec(`trivy --quiet image ${image === "none" || image === undefined ? '--input image.tar': `${image}` } --exit-code 1 --severity CRITICAL,HIGH`, { silent: false });
   } {
-    const result = await shell.exec(`trivy --quiet image --format template "@/trivy/contrib/"${output}.tpl"  -o report-trity.${extension} ${image === "none" || image === undefined ? '--input image.tar': `${image}` } --severity CRITICAL,HIGH`, { silent: false });
+    const result = await shell.exec(`trivy --quiet image --format template "@/trivy/contrib/${output}.tpl" -o report-trivy.${extension} ${image === "none" || image === undefined ? '--input image.tar': `${image}`} --exit-code 1 --severity CRITICAL,HIGH`, { silent: false });
     console.log(`Generation file: report-trity.${extension}`);
   }
 
@@ -224,9 +224,9 @@ async function ScanFsTrivy(output = 'default') {
   }
 
   if (output === 'default') {
-    const result = await shell.exec(`trivy fs --scanners vuln,secret,config ./ --severity CRITICAL,HIGH`, { silent: false });
+    const result = await shell.exec(`trivy fs --scanners vuln,secret,config ./ --exit-code 1 --severity CRITICAL,HIGH`, { silent: false });
   } else {
-    const result = await shell.exec(`trivy fs --scanners vuln,secret,config --format template "@/trivy/contrib/${output}.tpl"  -o report-trity.${extension} ./ --severity CRITICAL,HIGH`, { silent: false });
+    const result = await shell.exec(`trivy fs --scanners vuln,secret,config --format template "@/trivy/contrib/${output}.tpl"  -o report-trity.${extension} ./ --exit-code 1 --severity CRITICAL,HIGH`, { silent: false });
     console.log(`Generation file: report-trity.${extension}`);
   }
 
