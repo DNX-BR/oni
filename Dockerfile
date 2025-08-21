@@ -6,6 +6,7 @@ COPY . .
 RUN npm install; \
     npm install -g pkg; \
     pkg .
+RUN mv ./dist/oni-x64 ./dist/oni-amd64
 
 FROM debian:12.10 as base_debian
 ENV APP_VERSION 3.0.0
@@ -43,5 +44,8 @@ RUN pip3 install --break-system-packages semgrep
 
 FROM base_debian
 
-COPY --from=base /usr/src/app/dist/oni /usr/bin/oni
+ARG TARGETARCH
+
+COPY --from=base /usr/src/app/dist/oni-$TARGETARCH /usr/bin/oni
+
 RUN chmod +x /usr/bin/oni
