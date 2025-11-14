@@ -927,6 +927,7 @@ register_task_definition() {
           + (if ($ulimits | length) > 0 then {ulimits: $ulimits} else {} end)
           + (if ($mountPoints | length) > 0 then {mountPoints: $mountPoints} else {} end)
     ')
+
     
     # Add repository credentials if configured
     if [ -n "$repo_credentials" ] && [ "$repo_credentials" != "null" ]; then
@@ -1010,7 +1011,20 @@ register_task_definition() {
     # Add Fargate-specific settings
     if [ "$FARGATE" = true ]; then
         local memory_value=$(echo "$APP_MEMORY" | sed 's/ GB/ * 1024/g' | sed 's/ MB//g' | bc -l | awk '{print int($1)}')
-        local cpu_value=$(echo "$APP_CPU" | sed 's/ vCPU//g' | awk '{print int($1 * 1024)}')
+        cpu_clean=$(echo "$APP_CPU" | sed 's/ vCPU//')
+
+        case "$cpu_clean" in
+        "0.25")
+            cpu_value=256
+            ;;
+        "0.5")
+            cpu_value=512
+            ;;
+        *)
+            # Para 1, 2, 4... vCPUs
+            cpu_value=$((cpu_clean * 1024))
+            ;;
+        esac        
         
         task_def=$(echo "$task_def" | jq \
             --arg memory "$memory_value" \
@@ -1029,11 +1043,15 @@ register_task_definition() {
         return 0
     fi
     
+    echo $task_def > output.json
+
     # Register task definition
     local result=$(aws ecs register-task-definition \
         --region "$APP_REGION" \
         --cli-input-json "$task_def" \
         --output json 2>&1)
+
+    
     
     if [ $? -ne 0 ]; then
         log_error "Failed to register task definition:"
