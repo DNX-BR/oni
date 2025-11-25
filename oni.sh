@@ -504,6 +504,8 @@ extract_secrets() {
         echo "[]"
         return 0
     fi
+
+
     
     log_info "Extracting secrets from: $APP_SECRET_EXTRACT"
     
@@ -891,8 +893,16 @@ register_task_definition() {
     fi
     
     # Build main container definition
-    local mem_mb=$(echo "$APP_MEMORY" | sed 's/ GB/ * 1024/g' | sed 's/ MB//g' | bc -l | awk '{print int($1)}')
-    local cpu_units=$(echo "$APP_CPU" | sed 's/ vCPU//g' | awk '{print int($1 * 1024)}')
+    # Only convert values for Fargate, for EC2 use the values as is
+    local mem_mb
+    local cpu_units
+    if [ "$FARGATE" = true ]; then
+        mem_mb=$(echo "$APP_MEMORY" | sed 's/ GB/ * 1024/g' | sed 's/ MB//g' | bc -l | awk '{print int($1)}')
+        cpu_units=$(echo "$APP_CPU" | sed 's/ vCPU//g' | awk '{print int($1 * 1024)}')
+    else
+        mem_mb="$APP_MEMORY"
+        cpu_units="$APP_CPU"
+    fi
 
     local container_def=$(jq -n \
         --arg name "$APP_SERVICE_NAME" \
