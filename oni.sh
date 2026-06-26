@@ -306,14 +306,18 @@ parse_yaml() {
     local env=$2
     local app=$3
     local key=$4
+    local value=""
     
     if command -v yq &> /dev/null;
     then
-        yq eval ".${env}.${app}.${key}" "$yaml_file" 2>/dev/null || echo ""
+        value=$(yq eval ".${env}.${app}.${key}" "$yaml_file" 2>/dev/null || echo "")
     else
-        # Fallback: simple grep-based parsing
-        grep -A 200 "^${env}:" "$yaml_file" | grep -A 100 "  ${app}:" | grep "    ${key}:" | cut -d':' -f2- | sed 's/^ *//' | sed 's/"//g'
+        # Fallback: simple grep-based parsing (head -1 avoids matching a later app in the same block)
+        value=$(grep -A 200 "^${env}:" "$yaml_file" | grep -A 100 "  ${app}:" | grep "    ${key}:" | head -1 | cut -d':' -f2- | sed 's/^ *//' | sed 's/"//g' || true)
     fi
+    
+    [ "$value" = "null" ] && value=""
+    echo "$value"
 }
 
 # Function to get array values from YAML
@@ -500,7 +504,7 @@ scan_image() {
 
 # Function to extract secrets from AWS Secrets Manager
 extract_secrets() {
-    if [ -z "$APP_SECRET_EXTRACT" ]; then
+    if [ -z "$APP_SECRET_EXTRACT" ] || [ "$APP_SECRET_EXTRACT" = "null" ]; then
         echo "[]"
         return 0
     fi
@@ -555,7 +559,7 @@ build_secrets() {
         
         if [ "$secrets_yaml" != "[]" ] && [ -n "$secrets_yaml" ] && [ "$secrets_yaml" != "null" ]; then
             local config_secrets=$(echo "$secrets_yaml" | jq -s 'map(to_entries | map({name: .key, valueFrom: .value})) | add // []')
-            secrets=$(echo "$extracted_secrets $config_secrets" | jq -s 'add | unique_by(.name)')
+            secrets=$(jq -n --argjson extracted "${extracted_secrets:-[]}" --argjson config "${config_secrets:-[]}" '$extracted + $config | unique_by(.name)')
         else
             secrets="$extracted_secrets"
         fi
