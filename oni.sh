@@ -853,14 +853,14 @@ build_extra_containers() {
         return 0
     fi
     
-    local extras=$(yq eval ".${ENVIRONMENT}.${APP_NAME}.EXTRA_CONTAINERS[]" "$CONFIG_FILE" 2>/dev/null | yq -o=json '.' 2>/dev/null)
+    local extras=$(yq eval -o=json ".${ENVIRONMENT}.${APP_NAME}.EXTRA_CONTAINERS" "$CONFIG_FILE" 2>/dev/null)
     
-    if [ -z "$extras" ] || [ "$extras" = "null" ]; then
+    if [ -z "$extras" ] || [ "$extras" = "null" ] || [ "$extras" = "[]" ]; then
         echo "[]"
         return 0
     fi
     
-    extra_containers=$(echo "$extras" | jq -s \
+    extra_containers=$(echo "$extras" | jq \
         --arg tag "$TAG" \
         --arg region "$APP_REGION" \
         --arg default_cluster "$CLUSTER_NAME" \
