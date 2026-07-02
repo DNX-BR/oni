@@ -904,7 +904,13 @@ build_extra_containers() {
         } else {} end)
         + (if .APP_LINKS then {links: .APP_LINKS} else {} end)
         + (if (.APP_PORTS // []) | length > 0 then {
-            portMappings: [.APP_PORTS[] | {containerPort: ., protocol: "tcp"}]
+            portMappings: [
+                .APP_PORTS[] | if type == "number" then
+                    {containerPort: ., protocol: "tcp"}
+                else
+                    {containerPort: .containerPort, protocol: (.protocol // "tcp")}
+                end
+            ]
         } else {} end)
         + (if (.FIRELENS_CONFIGURATION // null) != null then {
             firelensConfiguration: {
