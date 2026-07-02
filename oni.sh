@@ -711,6 +711,47 @@ build_task_tags() {
     echo "$tags"
 }
 
+# Build ECS logConfiguration from APP_LOG_CONFIGURATION / LOG_CONFIGURATION block.
+# OPTIONS and SECRET_OPTIONS use the same list-of-single-key-maps format as APP_VARIABLES.
+build_log_configuration_json() {
+    local config_json=$1
+    local container_name=$2
+    local cluster=$3
+    local region=$4
+
+    if [ -z "$config_json" ] || [ "$config_json" = "null" ]; then
+        jq -n \
+            --arg cluster "$cluster" \
+            --arg name "$container_name" \
+            --arg region "$region" \
+            '{
+                logDriver: "awslogs",
+                options: {
+                    "awslogs-group": ("/ecs/" + $cluster + "/" + $name),
+                    "awslogs-region": $region,
+                    "awslogs-stream-prefix": $name
+                }
+            }'
+        return 0
+    fi
+
+    echo "$config_json" | jq '
+        def kv_list_to_obj:
+            if length == 0 then {}
+            else map(to_entries | .[0] | {(.key): (.value | tostring)}) | add
+            end;
+        def kv_list_to_secrets:
+            if length == 0 then []
+            else map(to_entries | .[0] | {name: .key, valueFrom: .value})
+            end;
+        {
+            logDriver: (.DRIVER // .LOG_DRIVER // "awslogs"),
+            options: ((.OPTIONS // .LOG_OPTIONS // []) | kv_list_to_obj),
+            secretOptions: ((.SECRET_OPTIONS // .LOG_SECRET_OPTIONS // []) | kv_list_to_secrets)
+        } | if (.secretOptions | length) == 0 then del(.secretOptions) else . end
+    '
+}
+
 # Function to build DataDog agent container
 build_datadog_agent() {
     local datadog_config=$(yq eval ".${ENVIRONMENT}.${APP_NAME}.EXTRA_CONFIG.DATADOG_AGENT" "$CONFIG_FILE" 2>/dev/null | yq -o=json '.' 2>/dev/null)
@@ -819,25 +860,58 @@ build_extra_containers() {
         return 0
     fi
     
-    extra_containers=$(echo "$extras" | jq -s --arg tag "$TAG" 'map({
-        name: .APP_NAME,
-        image: (.APP_IMAGE + ":" + $tag),
-        essential: true,
-        environment: (.APP_VARIABLES // [] | map(to_entries | map({name: .key, value: (.value | tostring)}) | add)),
-        secrets: (.APP_SECRETS // [] | map(to_entries | map({name: .key, valueFrom: .value}) | add)),
-        logConfiguration: {
-            logDriver: "awslogs",
-            options: {
-                "awslogs-group": ("/ecs/" + .CLUSTER_NAME + "/" + .APP_NAME),
-                "awslogs-region": "'$APP_REGION'",
-                "awslogs-stream-prefix": .APP_NAME
-            }
+    extra_containers=$(echo "$extras" | jq -s \
+        --arg tag "$TAG" \
+        --arg region "$APP_REGION" \
+        --arg default_cluster "$CLUSTER_NAME" \
+        'def kv_list_to_obj:
+            if length == 0 then {}
+            else map(to_entries | .[0] | {(.key): (.value | tostring)}) | add
+            end;
+        def kv_list_to_secrets:
+            if length == 0 then []
+            else map(to_entries | .[0] | {name: .key, valueFrom: .value})
+            end;
+        def build_sidecar_log($container):
+            if ($container.LOG_CONFIGURATION // null) != null then
+                {
+                    logDriver: ($container.LOG_CONFIGURATION.DRIVER // $container.LOG_CONFIGURATION.LOG_DRIVER // "awslogs"),
+                    options: (($container.LOG_CONFIGURATION.OPTIONS // $container.LOG_CONFIGURATION.LOG_OPTIONS // []) | kv_list_to_obj),
+                    secretOptions: (($container.LOG_CONFIGURATION.SECRET_OPTIONS // $container.LOG_CONFIGURATION.LOG_SECRET_OPTIONS // []) | kv_list_to_secrets)
+                } | if (.secretOptions | length) == 0 then del(.secretOptions) else . end
+            else
+                {
+                    logDriver: "awslogs",
+                    options: {
+                        "awslogs-group": ("/ecs/" + ($container.CLUSTER_NAME // $default_cluster) + "/" + $container.APP_NAME),
+                        "awslogs-region": $region,
+                        "awslogs-stream-prefix": $container.APP_NAME
+                    }
+                }
+            end;
+        map({
+            name: .APP_NAME,
+            image: (if .USE_STATIC_IMAGE == true then .APP_IMAGE else (.APP_IMAGE + ":" + $tag) end),
+            essential: (.ESSENTIAL // true),
+            environment: (.APP_VARIABLES // [] | map(to_entries | map({name: .key, value: (.value | tostring)}) | add)),
+            secrets: (.APP_SECRETS // [] | map(to_entries | map({name: .key, valueFrom: .value}) | add)),
+            logConfiguration: build_sidecar_log(.)
         }
-    } + (if .IS_FARGATE == false then {
-        memoryReservation: .APP_MEMORY_RESERVATION,
-        memory: .APP_MEMORY,
-        cpu: .APP_CPU
-    } else {} end) + (if .APP_LINKS then {links: .APP_LINKS} else {} end))')
+        + (if .IS_FARGATE == false then {
+            memoryReservation: .APP_MEMORY_RESERVATION,
+            memory: .APP_MEMORY,
+            cpu: .APP_CPU
+        } else {} end)
+        + (if .APP_LINKS then {links: .APP_LINKS} else {} end)
+        + (if (.APP_PORTS // []) | length > 0 then {
+            portMappings: [.APP_PORTS[] | {containerPort: ., protocol: "tcp"}]
+        } else {} end)
+        + (if (.FIRELENS_CONFIGURATION // null) != null then {
+            firelensConfiguration: {
+                type: ((.FIRELENS_CONFIGURATION.TYPE // "fluentbit") | ascii_downcase),
+                options: ((.FIRELENS_CONFIGURATION.OPTIONS // []) | kv_list_to_obj)
+            }
+        } else {} end))')
     
     echo "$extra_containers"
 }
@@ -908,6 +982,12 @@ register_task_definition() {
         cpu_units="$APP_CPU"
     fi
 
+    local app_log_config=""
+    if command -v yq &> /dev/null; then
+        app_log_config=$(yq eval ".${ENVIRONMENT}.${APP_NAME}.APP_LOG_CONFIGURATION" "$CONFIG_FILE" 2>/dev/null | yq -o=json '.' 2>/dev/null)
+    fi
+    local log_configuration=$(build_log_configuration_json "$app_log_config" "$APP_SERVICE_NAME" "$CLUSTER_NAME" "$APP_REGION")
+
     local container_def=$(jq -n \
         --arg name "$APP_SERVICE_NAME" \
         --arg cluster "$CLUSTER_NAME" \
@@ -920,6 +1000,7 @@ register_task_definition() {
         --argjson command "$command" \
         --argjson ulimits "$ulimits" \
         --argjson mountPoints "$mount_points" \
+        --argjson logConfiguration "$log_configuration" \
         --arg stopTimeout "$app_stop_timeout" \
         '{
             name: $name,
@@ -929,14 +1010,7 @@ register_task_definition() {
             secrets: $secrets,
             portMappings: $portMappings,
             stopTimeout: ($stopTimeout | tonumber),
-            logConfiguration: {
-                logDriver: "awslogs",
-                options: {
-                    "awslogs-group": ("/ecs/" + $cluster + "/" + $name),
-                    "awslogs-region": "'$APP_REGION'",
-                    "awslogs-stream-prefix": $name
-                }
-            }
+            logConfiguration: $logConfiguration
         } + (if ($command | length) > 0 then {command: $command} else {} end)
           + (if ($ulimits | length) > 0 then {ulimits: $ulimits} else {} end)
           + (if ($mountPoints | length) > 0 then {mountPoints: $mountPoints} else {} end)

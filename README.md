@@ -105,15 +105,50 @@ development:                              # Oni Workspace defined by variable NO
       - NAME: name    
         BASE: 1    
         WEIGHT: 0
-    EXTRA_CONTAINERS:                     # Add this block to add another container um same task definition.
-      - APP_NAME: XXXXXXXXXXX
-        APP_IMAGE: XXXXXXXXXXXXXXXX
-        IS_FARGATE: false
-        APP_VARIABLES: [] 
-        APP_SECRETS: []
-        APP_MEMORY: 1024
-        APP_MEMORY_RESERVATION: 1024
-        APP_CPU: 1024        
+    EXTRA_CONTAINERS:                     # Sidecar containers in the same task definition.
+      - APP_NAME: datadog-agent
+        APP_IMAGE: public.ecr.aws/datadog/agent:7.63.3
+        USE_STATIC_IMAGE: true            # Do not append deploy tag to APP_IMAGE
+        ESSENTIAL: false                  # Default: true
+        IS_FARGATE: true
+        APP_PORTS:                        # Optional container ports
+          - 8126
+        APP_VARIABLES:
+          - DD_APM_ENABLED: "true"
+        APP_SECRETS:
+          - DD_API_KEY: arn:aws:ssm:region:account:parameter/key
+        LOG_CONFIGURATION:                # Optional; defaults to awslogs
+          DRIVER: awslogs
+          OPTIONS:
+            - awslogs-group: /ecs/cluster/datadog-agent
+            - awslogs-region: us-east-1
+            - awslogs-stream-prefix: datadog-agent
+      - APP_NAME: log-router
+        APP_IMAGE: amazon/aws-for-fluent-bit:stable
+        USE_STATIC_IMAGE: true
+        ESSENTIAL: true
+        FIRELENS_CONFIGURATION:           # Required for awsfirelens on the main container
+          TYPE: fluentbit
+          OPTIONS:
+            - enable-ecs-log-metadata: "true"
+        LOG_CONFIGURATION:
+          DRIVER: awslogs
+          OPTIONS:
+            - awslogs-group: /ecs/cluster/fluentbit
+            - awslogs-region: us-east-1
+            - awslogs-stream-prefix: fluentbit
+    APP_LOG_CONFIGURATION:                # Main container log driver (default: awslogs)
+      DRIVER: awsfirelens
+      OPTIONS:
+        - Name: datadog
+        - Host: http-intake.logs.datadoghq.com
+        - TLS: "on"
+        - provider: ecs
+        - dd_service: my-app
+        - dd_source: python
+        - dd_tags: env:development
+      SECRET_OPTIONS:
+        - apikey: /production/datadogapikey
     APP_HOOKS:
       - BeforeInstall: "BeforeInstallHookFunctionName"
       - AfterInstall: "AfterInstallHookFunctionName"
