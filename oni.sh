@@ -892,7 +892,7 @@ build_extra_containers() {
         map({
             name: .APP_NAME,
             image: (if .USE_STATIC_IMAGE == true then .APP_IMAGE else (.APP_IMAGE + ":" + $tag) end),
-            essential: (.ESSENTIAL // true),
+            essential: (if .ESSENTIAL != null then .ESSENTIAL else true end),
             environment: (.APP_VARIABLES // [] | map(to_entries | map({name: .key, value: (.value | tostring)}) | add)),
             secrets: (.APP_SECRETS // [] | map(to_entries | map({name: .key, valueFrom: .value}) | add)),
             logConfiguration: build_sidecar_log(.)
