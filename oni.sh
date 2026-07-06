@@ -1128,6 +1128,18 @@ register_task_definition() {
                 memory: $memory,
                 cpu: $cpu
             }')
+
+        local app_cpu_architecture=$(parse_yaml "$CONFIG_FILE" "$ENVIRONMENT" "$APP_NAME" "APP_CPU_ARCHITECTURE")
+        if [ -n "$app_cpu_architecture" ] && [ "$app_cpu_architecture" != "null" ]; then
+            task_def=$(echo "$task_def" | jq \
+                --arg arch "$app_cpu_architecture" \
+                '. + {
+                    runtimePlatform: {
+                        cpuArchitecture: $arch,
+                        operatingSystemFamily: "LINUX"
+                    }
+                }')
+        fi
     fi
     
     if [ "$DRY_RUN" = true ]; then
