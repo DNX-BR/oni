@@ -616,6 +616,74 @@ build_capacity_providers_raw() {
     echo "$providers_json"
 }
 
+# Function to build capacity provider strategy for AWS CLI (camelCase JSON)
+build_capacity_providers_cli_json() {
+    local raw_providers
+    raw_providers=$(build_capacity_providers_raw)
+
+    if [ "$raw_providers" = "[]" ] || [ "$raw_providers" = "null" ] || [ -z "$raw_providers" ]; then
+        echo ""
+        return 0
+    fi
+
+    echo "$raw_providers" | jq -c 'map({
+        capacityProvider: .NAME,
+        base: .BASE,
+        weight: .WEIGHT
+    })'
+}
+
+# Function to update ECS service and validate response
+run_ecs_update_service() {
+    local task_arn=$1
+    local capacity_providers_json
+    capacity_providers_json=$(build_capacity_providers_cli_json)
+
+    local result=""
+    local aws_exit=0
+
+    set +e
+    if [ -n "$capacity_providers_json" ] && [ "$capacity_providers_json" != "[]" ]; then
+        result=$(aws ecs update-service \
+            --region "$APP_REGION" \
+            --cluster "$CLUSTER_NAME" \
+            --service "$APP_SERVICE_NAME" \
+            --task-definition "$task_arn" \
+            --capacity-provider-strategy "$capacity_providers_json" \
+            --output json 2>&1)
+    else
+        result=$(aws ecs update-service \
+            --region "$APP_REGION" \
+            --cluster "$CLUSTER_NAME" \
+            --service "$APP_SERVICE_NAME" \
+            --task-definition "$task_arn" \
+            --output json 2>&1)
+    fi
+    aws_exit=$?
+    set -e
+
+    if [ "$aws_exit" -ne 0 ]; then
+        log_error "Failed to update service:"
+        echo "$result" >&2
+        exit 1
+    fi
+
+    local service_status
+    service_status=$(echo "$result" | jq -r '.service.status // empty' 2>/dev/null) || {
+        log_error "Failed to parse update-service response:"
+        echo "$result" >&2
+        exit 1
+    }
+
+    if [ "$service_status" != "ACTIVE" ]; then
+        log_error "Service status: ${service_status:-unknown}"
+        echo "$result" >&2
+        exit 1
+    fi
+
+    log_success "Service updated successfully"
+}
+
 # Function to build ulimits
 build_ulimits() {
     local ulimits="[]"
@@ -1179,60 +1247,19 @@ deploy_worker() {
     
     log_info "Deploying worker service (no load balancer): ${APP_SERVICE_NAME}"
     
-    local raw_providers=$(build_capacity_providers_raw)
-    local capacity_providers_json="[]"
-    local capacity_strategy_flag=""
-    
-    if [ "$raw_providers" != "[]" ] && [ "$raw_providers" != "null" ]; then
-        # Converte de NAME/BASE/WEIGHT para camelCase (capacityProvider, base, weight)
-        capacity_providers_json=$(echo "$raw_providers" | jq 'map({
-            capacityProvider: .NAME,
-            base: .BASE,
-            weight: .WEIGHT
-        })')
-        
-        local escaped_json=$(echo "$capacity_providers_json" | jq -c '.')
-        capacity_strategy_flag="--capacity-provider-strategy $escaped_json"
-    fi
-    
     if [ "$DRY_RUN" = true ]; then
+        local capacity_providers_json
+        capacity_providers_json=$(build_capacity_providers_cli_json)
         log_info "DRY RUN: Would update service:"
         log_info "  Service: $APP_SERVICE_NAME"
         log_info "  Cluster: $CLUSTER_NAME"
         log_info "  Task Definition: $task_arn"
-        [ -n "$capacity_strategy_flag" ] && log_info "  Capacity Providers (camelCase): $capacity_providers_json"
+        [ -n "$capacity_providers_json" ] && log_info "  Capacity Providers: $capacity_providers_json"
         return 0
     fi
     
-    local cmd="aws ecs update-service \
-        --region $APP_REGION \
-        --cluster $CLUSTER_NAME \
-        --service $APP_SERVICE_NAME \
-        --task-definition $task_arn"
-
-    if [ -n "$capacity_strategy_flag" ]; then
-        cmd="$cmd $capacity_strategy_flag"
-    fi
-
-    cmd="$cmd --output json"
-
-    local result=$(eval "$cmd" 2>&1)
-    
-    if [ $? -ne 0 ]; then
-        log_error "Failed to update service:"
-        echo "$result" >&2
-        exit 1
-    fi
-    
-    local service_status=$(echo "$result" | jq -r '.service.status')
-    
-    if [ "$service_status" = "ACTIVE" ]; then
-        log_success "Service updated successfully"
-        log_success "Deployment completed for $APP_SERVICE_NAME"
-    else
-        log_error "Service status: $service_status"
-        exit 1
-    fi
+    run_ecs_update_service "$task_arn"
+    log_success "Deployment completed for $APP_SERVICE_NAME"
 }
 
 # Function to deploy with load balancer (direct update)
@@ -1242,60 +1269,19 @@ deploy_with_loadbalancer() {
     
     log_info "Deploying with load balancer: ${APP_SERVICE_NAME}"
     
-    local raw_providers=$(build_capacity_providers_raw)
-    local capacity_providers_json="[]"
-    local capacity_strategy_flag=""
-    
-    if [ "$raw_providers" != "[]" ] && [ "$raw_providers" != "null" ]; then
-        # Converte de NAME/BASE/WEIGHT para camelCase (capacityProvider, base, weight)
-        capacity_providers_json=$(echo "$raw_providers" | jq 'map({
-            capacityProvider: .NAME,
-            base: .BASE,
-            weight: .WEIGHT
-        })')
-        
-        local escaped_json=$(echo "$capacity_providers_json" | jq -c '.')
-        capacity_strategy_flag="--capacity-provider-strategy $escaped_json"
-    fi
-    
     if [ "$DRY_RUN" = true ]; then
+        local capacity_providers_json
+        capacity_providers_json=$(build_capacity_providers_cli_json)
         log_info "DRY RUN: Would update service with load balancer:"
         log_info "  Service: $APP_SERVICE_NAME"
         log_info "  Cluster: $CLUSTER_NAME"
         log_info "  Task Definition: $task_arn"
-        [ -n "$capacity_strategy_flag" ] && log_info "  Capacity Providers (camelCase): $capacity_providers_json"
+        [ -n "$capacity_providers_json" ] && log_info "  Capacity Providers: $capacity_providers_json"
         return 0
     fi
     
-    local cmd="aws ecs update-service \
-        --region $APP_REGION \
-        --cluster $CLUSTER_NAME \
-        --service $APP_SERVICE_NAME \
-        --task-definition $task_arn"
-    
-    if [ -n "$capacity_strategy_flag" ]; then
-        cmd="$cmd $capacity_strategy_flag"
-    fi
-    
-    cmd="$cmd --output json"
-    
-    local result=$(eval "$cmd" 2>&1)
-    
-    if [ $? -ne 0 ]; then
-        log_error "Failed to update service:"
-        echo "$result" >&2
-        exit 1
-    fi
-    
-    local service_status=$(echo "$result" | jq -r '.service.status')
-    
-    if [ "$service_status" = "ACTIVE" ]; then
-        log_success "Service updated successfully"
-        monitor_deployment
-    else
-        log_error "Service status: $service_status"
-        exit 1
-    fi
+    run_ecs_update_service "$task_arn"
+    monitor_deployment
 }
 
 # Function to deploy with CodeDeploy
