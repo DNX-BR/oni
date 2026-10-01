@@ -208,6 +208,7 @@ async function ExtraContainers(extraContainers,tag) {
             ...(!extra.IS_FARGATE && {memoryReservation: extra.APP_MEMORY_RESERVATION} ),
             ...(!extra.IS_FARGATE && { memory: extra.APP_MEMORY} ),
             ...(!extra.IS_FARGATE && { cpu: extra.APP_CPU} ),
+            ...(extra.ESSENTIAL !== undefined && { essential: extra.ESSENTIAL }),
             ...(extra.APP_LINKS  && {links: extra.APP_LINKS}),       
             environment: extra.APP_VARIABLES.map(v => {
                 let keyVariables = {}
